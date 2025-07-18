@@ -7,7 +7,12 @@
     "ios": "react-native run-ios",
     "lint": "eslint .",
     "start": "react-native start",
-    "test": "jest"
+    "test": "jest",
+    "open": "open ios/NoteIt.xcworkspace",
+    "clean-android": "cd android && ./gradlew clean && cd ..",
+    "clean-ios": "cd ios && pod deintegrate && pod install && cd ..",
+    "pod-start": "cd ios && bundle install && bundle exec pod install && cd ..",
+    "pod-install": "cd ios && pod install && cd .."
   },
   "dependencies": {
     "react": "19.1.0",

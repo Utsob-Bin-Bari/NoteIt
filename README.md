@@ -1,97 +1,168 @@
-This is a new [**React Native**](https://reactnative.dev) project, bootstrapped using [`@react-native-community/cli`](https://github.com/react-native-community/cli).
+# NoteIt - React Native App
 
-# Getting Started
+A React Native application built with TypeScript for note-taking functionality.
 
-> **Note**: Make sure you have completed the [Set Up Your Environment](https://reactnative.dev/docs/set-up-your-environment) guide before proceeding.
+## 📋 Prerequisites
 
-## Step 1: Start Metro
+Before you begin, ensure you have the following installed on your machine:
 
-First, you will need to run **Metro**, the JavaScript build tool for React Native.
+### Required Software
+- **Node.js** (v18 or higher) - [Download](https://nodejs.org/)
+- **Yarn** (v1.22.22 or higher) - [Install Guide](https://classic.yarnpkg.com/en/docs/install/)
+- **React Native CLI** (v19.0.0 or higher) - [Install Guide](https://reactnative.dev/docs/environment-setup)
+- **Java Development Kit (JDK)** (v17 or higher) - [Download](https://adoptium.net/)
+- **Android Studio** (for Android development) - [Download](https://developer.android.com/studio)
+- **Xcode** (for iOS development, macOS only) - [Download from App Store](https://apps.apple.com/us/app/xcode/id497799835)
+- **CocoaPods** (v1.16.2 or higher) - [Install Guide](https://cocoapods.org/)
 
-To start the Metro dev server, run the following command from the root of your React Native project:
+### Environment Verification
 
-```sh
-# Using npm
-npm start
+Your current environment setup:
+```bash
+Node.js: v23.7.0 ✅
+Yarn: v1.22.22 ✅
+React Native CLI: v19.0.0 ✅
+Java: OpenJDK 17.0.14 ✅
+Xcode Command Line Tools: v2409 ✅
+Ruby: v2.6.10 ✅
+CocoaPods: v1.16.2 ✅
+```
 
-# OR using Yarn
+## 🚀 Project Setup
+
+### Step 1: Clone and Install Dependencies
+
+```bash
+# Clone the repository (if not already done)
+git clone <repository-url>
+cd NoteIt
+
+# Install dependencies
+yarn install
+```
+
+### Step 2: iOS Setup (macOS only)
+
+```bash
+# Install Ruby dependencies for CocoaPods
+yarn pod-start
+```
+
+### Step 3: Android Setup
+
+```bash
+# Clean Android build (if needed)
+yarn clean-android
+
+
+## 🏃‍♂️ Running the App
+
+### Start Metro Bundler
+
+First, start the Metro bundler in one terminal:
+
+```bash
 yarn start
 ```
 
-## Step 2: Build and run your app
+### Run on Android
 
-With Metro running, open a new terminal window/pane from the root of your React Native project, and use one of the following commands to build and run your Android or iOS app:
+In a new terminal:
 
-### Android
-
-```sh
-# Using npm
-npm run android
-
-# OR using Yarn
+```bash
 yarn android
 ```
 
-### iOS
+### Run on iOS (macOS only)
 
-For iOS, remember to install CocoaPods dependencies (this only needs to be run on first clone or after updating native deps).
+In a new terminal:
 
-The first time you create a new project, run the Ruby bundler to install CocoaPods itself:
-
-```sh
-bundle install
-```
-
-Then, and every time you update your native dependencies, run:
-
-```sh
-bundle exec pod install
-```
-
-For more information, please visit [CocoaPods Getting Started guide](https://guides.cocoapods.org/using/getting-started.html).
-
-```sh
-# Using npm
-npm run ios
-
-# OR using Yarn
+```bash
 yarn ios
 ```
 
-If everything is set up correctly, you should see your new app running in the Android Emulator, iOS Simulator, or your connected device.
+### Open iOS Project in Xcode
 
-This is one way to run your app — you can also build it directly from Android Studio or Xcode.
+```bash
+yarn open
+```
 
-## Step 3: Modify your app
+## 🛠️ Available Scripts
 
-Now that you have successfully run the app, let's make changes!
+| Script | Description |
+|--------|-------------|
+| `yarn start` | Start Metro bundler |
+| `yarn android` | Run app on Android device/emulator |
+| `yarn ios` | Run app on iOS simulator |
+| `yarn open` | Open iOS project in Xcode |
+| `yarn lint` | Run ESLint for code quality |
+| `yarn test` | Run Jest tests |
+| `yarn clean-android` | Clean Android build |
+| `yarn clean-ios` | Clean iOS build and reinstall pods |
+| `yarn pod-start` | Install Ruby dependencies and pods |
+| `yarn pod-install` | Install CocoaPods dependencies |
 
-Open `App.tsx` in your text editor of choice and make some changes. When you save, your app will automatically update and reflect these changes — this is powered by [Fast Refresh](https://reactnative.dev/docs/fast-refresh).
+## 📱 Project Information
 
-When you want to forcefully reload, for example to reset the state of your app, you can perform a full reload:
+- **React Native Version**: 0.80.1
+- **React Version**: 19.1.0
+- **TypeScript**: 5.0.4
+- **Platforms**: iOS, Android
+- **Package Manager**: Yarn
 
-- **Android**: Press the <kbd>R</kbd> key twice or select **"Reload"** from the **Dev Menu**, accessed via <kbd>Ctrl</kbd> + <kbd>M</kbd> (Windows/Linux) or <kbd>Cmd ⌘</kbd> + <kbd>M</kbd> (macOS).
-- **iOS**: Press <kbd>R</kbd> in iOS Simulator.
+## 🔧 Development
 
-## Congratulations! :tada:
+### Making Changes
 
-You've successfully run and modified your React Native App. :partying_face:
+1. Open `App.tsx` in your preferred editor
+2. Make your changes
+3. Save the file - the app will automatically reload with Fast Refresh
+4. For a full reload:
+   - **Android**: Press `R` twice or use Dev Menu (`Ctrl+M` / `Cmd+M`)
+   - **iOS**: Press `R` in iOS Simulator
 
-### Now what?
+### Project Structure
 
-- If you want to add this new React Native code to an existing application, check out the [Integration guide](https://reactnative.dev/docs/integration-with-existing-apps).
-- If you're curious to learn more about React Native, check out the [docs](https://reactnative.dev/docs/getting-started).
+```
+NoteIt/
+├── App.tsx                 # Main application component
+├── package.json           # Dependencies and scripts
+├── tsconfig.json          # TypeScript configuration
+├── android/               # Android-specific files
+├── ios/                   # iOS-specific files
+└── __tests__/            # Test files
+```
 
-# Troubleshooting
+## 🐛 Troubleshooting
 
-If you're having issues getting the above steps to work, see the [Troubleshooting](https://reactnative.dev/docs/troubleshooting) page.
+### Common Issues
 
-# Learn More
+1. **Metro bundler issues**: Try clearing cache with `yarn start --reset-cache`
+2. **iOS build issues**: Run `yarn clean-ios` to reinstall pods
+3. **Android build issues**: Run `yarn clean-android` to clean build
+4. **Dependency issues**: Delete `node_modules` and `yarn.lock`, then run `yarn install`
 
-To learn more about React Native, take a look at the following resources:
+### Environment Setup Issues
 
-- [React Native Website](https://reactnative.dev) - learn more about React Native.
-- [Getting Started](https://reactnative.dev/docs/environment-setup) - an **overview** of React Native and how setup your environment.
-- [Learn the Basics](https://reactnative.dev/docs/getting-started) - a **guided tour** of the React Native **basics**.
-- [Blog](https://reactnative.dev/blog) - read the latest official React Native **Blog** posts.
-- [`@facebook/react-native`](https://github.com/facebook/react-native) - the Open Source; GitHub **repository** for React Native.
+If you encounter environment setup issues, refer to the official React Native documentation:
+- [Environment Setup Guide](https://reactnative.dev/docs/environment-setup)
+- [Troubleshooting](https://reactnative.dev/docs/troubleshooting)
+
+## 📚 Learn More
+
+- [React Native Documentation](https://reactnative.dev/docs/getting-started)
+- [React Native Blog](https://reactnative.dev/blog)
+- [TypeScript with React Native](https://reactnative.dev/docs/typescript)
+
+## 🤝 Contributing
+
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Run tests: `yarn test`
+5. Run linting: `yarn lint`
+6. Submit a pull request
+
+---
+
+**Note**: This project requires Node.js version 18 or higher as specified in the `package.json` engines field.

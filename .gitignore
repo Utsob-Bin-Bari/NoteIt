@@ -1,9 +1,7 @@
 # OSX
-#
 .DS_Store
 
 # Xcode
-#
 build/
 *.pbxuser
 !default.pbxuser
@@ -22,8 +20,17 @@ DerivedData
 *.xcuserstate
 **/.xcode.env.local
 
+# Keep all Xcode project files
+# Only exclude user-specific files
+ios/**/xcuserdata/
+
+# Keep workspace files but exclude user-specific settings
+ios/**/xcuserdata/
+
+# Still exclude Pods directory (will be rebuilt with pod install)
+ios/Pods/
+
 # Android/IntelliJ
-#
 build/
 .idea
 .gradle
@@ -33,21 +40,25 @@ local.properties
 .cxx/
 *.keystore
 !debug.keystore
-.kotlin/
+
+# Keep gradle wrapper files
+!gradle/wrapper/gradle-wrapper.jar
+!gradle/wrapper/gradle-wrapper.properties
+
+# Keep gradle.properties (but you may need to remove sensitive information)
+!android/gradle.properties
+
+# Keep important configuration files
+!android/gradle/wrapper/
+!android/gradlew
+!android/gradlew.bat
 
 # node.js
-#
 node_modules/
 npm-debug.log
 yarn-error.log
 
 # fastlane
-#
-# It is recommended to not store the screenshots in the git repo. Instead, use fastlane to re-generate the
-# screenshots whenever they are needed.
-# For more information about the recommended setup visit:
-# https://docs.fastlane.tools/best-practices/source-control/
-
 **/fastlane/report.xml
 **/fastlane/Preview.html
 **/fastlane/screenshots
@@ -60,7 +71,7 @@ yarn-error.log
 **/Pods/
 /vendor/bundle/
 
-# Temporary files created by Metro to check the health of the file watcher
+# Temporary files created by Metro
 .metro-health-check*
 
 # testing
@@ -73,3 +84,16 @@ yarn-error.log
 !.yarn/releases
 !.yarn/sdks
 !.yarn/versions
+
+# Editor specific
+.vscode/
+*.swp
+*.swo
+
+# iOS specific
+ios/build/
+
+# Android specific
+android/app/build/
+android/build/
+android/.gradle/

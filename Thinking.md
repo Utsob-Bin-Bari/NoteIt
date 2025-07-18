@@ -55,3 +55,12 @@
 ## Conflict Resolution & Data Synchronization
 * **diff-match-patch (v1.0.5)**: Google's algorithm for text comparison and merging. Resolving
   conflicts when multiple users edit the same note by intelligently merging text changes. Implementation: When syncing notes, compares original text with local changes and server changes to create a merged version that preserves both users' additions while handling conflicts gracefully. 
+
+# Commmit 4: Select Architecture and set Cursor Rules
+* Layered (Clean) Architecture will be followed. It will help us to write cleaner code, keep the 
+  seperation of concern and maintainability of my codebase.
+* Cursor Rules are implemented to generate better output from my Prompt and maintain my preference and 
+  coding styles.
+* Add project structure to the README.md file 
+
+ 

@@ -1,0 +1,617 @@
+# NoteIt - Cursor Rules
+
+## Project Overview
+This is a React Native app built with Bare workflow, TypeScript, and Redux Toolkit. It's an offline-first note-taking application with conflict resolution capabilities, built using Clean Architecture principles.
+
+## Core Principles
+- Use Yarn to add or remove any packages
+- Maintain consistent color scheme and font throughout the app
+- Follow the same design pattern throughout the app
+- Use DRY (Don't Repeat Yourself) principle in code
+- **ALWAYS check existing components and try to reuse or extend them before creating new ones**
+- **ALWAYS look for reusable patterns and create shared components**
+- **MUST follow the layered architecture pattern for all screens**
+- Create separate type files in types to keep the types there
+- Try to avoid changing other functionality when adding new features
+- Review every file before providing responses
+
+## Technical Stack
+- **Framework**: React Native (0.80.1) with Bare workflow
+- **Language**: TypeScript (5.0.4)
+- **Navigation**: React Navigation v7
+- **State Management**: Redux Toolkit v2.8.2
+- **Styling**: StyleSheet (React Native)
+- **Lists**: @shopify/flash-list
+- **HTTP Client**: Axios
+- **Local Storage**: react-native-sqlite-storage
+- **Network**: @react-native-community/netinfo
+- **Conflict Resolution**: diff-match-patch
+- **Icons**: react-native-svg
+
+## Coding Standards
+
+### TypeScript
+- Use strict TypeScript with proper type definitions
+- Define interfaces for all props and state objects
+- Use generic types where appropriate
+- Avoid `any` type - prefer `unknown` or specific types
+- Use optional chaining and nullish coalescing operators
+
+### React Native
+- Use functional components with hooks
+- Implement proper permission handling for native features
+- Use Platform.OS for platform-specific code
+
+### Component Structure
+- Keep components in `src/presentation/components/` directory
+- Use PascalCase for component names
+- Export default at the end of files
+- Use TypeScript interfaces for props
+- Implement proper error boundaries where needed
+
+### Styling - CRITICAL RULES
+- **NO direct hex colors in components** - ALWAYS add to `src/presentation/constants/Colors.ts` first
+- **NO StyleSheet in screen or UI components** - Use GlobalStyles and inline styling only
+- **Colors.ts MUST have dual colors for dark/light mode** from context
+- Use StyleSheet.create() only in GlobalStyles
+- Keep styles at the bottom of component files
+- Use consistent color scheme (black backgrounds, white text or opposite)
+- **All styles should come from GlobalStyles (`src/presentation/styles/GlobalStyles.tsx`) when possible**
+- **When editing components used in multiple places, use inline styling to override instead of modifying GlobalStyles**
+
+### State Management
+- Use Redux Toolkit for global state
+- Keep local state with useState for component-specific data
+- Use useSelector and useDispatch hooks
+- Define proper action types and reducers
+- Keep state structure flat and normalized
+
+### File Organization
+```
+src/
+├── application/        # Business Logic Layer
+│   ├── context/       # React Context providers
+│   ├── services/      # Business logic services (FUNCTIONAL, NOT CLASSES)
+│   ├── store/         # Redux store, actions, reducers
+│   └── utils/         # Application-level utilities
+├── domain/            # Domain Layer
+│   ├── entities/      # Core business entities
+│   ├── validators/    # Domain-specific validation rules
+│   ├── data/          # Domain data models and interfaces
+│   └── types/         # TypeScript type definitions
+├── infrastructure/    # Infrastructure Layer
+│   ├── api/           # API calls and functions
+│   ├── storage/       # SQLite database utilities
+│   ├── validation/    # Infrastructure-level validation
+│   └── utils/         # Infrastructure utilities
+└── presentation/      # Presentation Layer
+    ├── components/    # Reusable UI components
+    ├── constants/     # UI constants (colors, etc.)
+    ├── hooks/         # Custom UI hooks
+    ├── navigation/    # Navigation configuration
+    ├── screens/       # Screen components (UI only)
+    ├── styles/        # Global styles and theming
+    └── utils/         # Presentation utilities
+```
+
+### API Integration
+- Use axios for HTTP requests
+- Implement proper error handling
+- Use async/await syntax
+- Handle loading states appropriately
+- Implement proper authentication token management
+
+### Performance
+- **Use FlashList instead of FlatList for better performance**
+- Use React.memo for expensive components
+- Avoid inline functions in render methods
+- Use proper key props for list items
+
+### Error Handling
+- Implement proper try-catch blocks for async operations
+- Show user-friendly error messages
+- Use Platform-specific alerts (ToastAndroid vs Alert)
+- Log errors for debugging purposes
+
+### Code Style
+- Use consistent indentation (2 spaces)
+- Use semicolons consistently
+- Use single quotes for strings
+- Use trailing commas in objects and arrays
+- Keep line length reasonable (~80-100 characters)
+- **Each file should have only ONE function and not exceed 150 lines**
+
+## Layered Architecture Pattern
+
+### **MANDATORY**: All screens MUST follow this layered architecture:
+
+#### 1. **Business Logic Layer (Services) - FUNCTIONAL ONLY**
+- **Location**: `src/application/services/`
+- **Purpose**: Contains all business logic, API calls, data transformation, and validation
+- **Naming**: `[ScreenName]Service.ts` (e.g., `NoteListService.ts`, `NoteEditorService.ts`)
+- **Structure** (FUNCTIONAL, NOT CLASSES):
+```typescript
+// src/application/services/NoteService.ts
+export const NoteService = {
+  // Business logic methods
+  validateNote: (note: NoteData): ValidationResult => {
+    // Validation logic
+  },
+
+  // API integration methods
+  fetchNotes: async (): Promise<Note[]> => {
+    // API logic
+  },
+
+  // Data transformation methods
+  transformNoteData: (apiData: any): Note => {
+    // Transform logic
+  },
+
+  // SQLite operations
+  saveNoteToLocal: async (note: Note): Promise<void> => {
+    // Database logic
+  }
+};
+```
+
+#### 2. **UI State Management Layer (Custom Hooks)**
+- **Location**: `src/presentation/hooks/`
+- **Purpose**: Manages UI state, Redux integration, and user interactions
+- **Naming**: `use[ScreenName].ts` (e.g., `useNoteList.ts`, `useNoteEditor.ts`)
+- **Structure**:
+```typescript
+export const useNoteList = ({ navigation }: Props) => {
+  // Redux state
+  const notes = useSelector((state: RootState) => state.notes.data);
+  
+  // Local state
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  
+  // Effects
+  useEffect(() => {
+    loadNotes();
+  }, []);
+  
+  // Handlers
+  const handleNotePress = useCallback((note: Note) => {
+    navigation.navigate('NoteEditor', { noteId: note.id });
+  }, [navigation]);
+  
+  return {
+    // State
+    notes,
+    loading,
+    error,
+    // Handlers
+    handleNotePress,
+    // Service for testing
+    service: NoteService
+  };
+};
+```
+
+#### 3. **Presentation Layer (UI Components)**
+- **Location**: `src/presentation/screens/`
+- **Purpose**: Pure UI components with minimal logic
+- **Structure**: Screen components should be ~50-100 lines maximum
+- **Requirements**:
+  - Import and use the corresponding custom hook
+  - Focus only on rendering UI elements
+  - No direct API calls or business logic
+  - No direct Redux operations (handled by hook)
+  - **MUST use GlobalStyles and inline styling only**
+  - **MUST be wrapped in ScrollView for responsiveness**
+
+### **Component Reusability Rules**
+
+#### **MANDATORY CHECKS BEFORE CREATING NEW COMPONENTS:**
+
+1. **Check Existing Components First**:
+   - Search `src/presentation/components/` for similar functionality
+   - Look for components that can be extended or configured
+   - Check if wrapper components exist
+
+2. **Extension Over Creation**:
+   - **ALWAYS** try to extend existing components with props
+   - Add configuration props instead of creating duplicates
+   - Use composition patterns to combine existing components
+
+3. **Reusable Component Patterns**:
+   - **List Wrappers**: For consistent list layouts with loading/error states
+   - **Page Wrappers**: For common screen layouts and navigation
+   - **Form Components**: For input fields and validation display
+   - **Modal Components**: For consistent popup behaviors
+   - **Item Components**: For list item rendering
+
+#### **Component Creation Guidelines**:
+
+```typescript
+// Example: Reusable List Wrapper
+interface ListWrapperProps<T> {
+  data: T[];
+  renderItem: (item: T) => React.ReactNode;
+  loading?: boolean;
+  error?: string;
+  emptyMessage?: string;
+  onRetry?: () => void;
+  extraContent?: React.ReactNode;
+}
+
+// Example: Configurable Component
+interface FlexibleComponentProps {
+  variant?: 'primary' | 'secondary' | 'tertiary';
+  size?: 'small' | 'medium' | 'large';
+  showIcon?: boolean;
+  customStyle?: StyleProp<ViewStyle>;
+  // Other configuration props
+}
+```
+
+### **Screen Development Workflow**
+
+#### **Step 1: Analyze Existing Patterns**
+```bash
+# Check existing services
+ls src/application/services/
+
+# Check existing hooks  
+ls src/presentation/hooks/
+
+# Check reusable components
+ls src/presentation/components/
+```
+
+#### **Step 2: Create Service Layer (FUNCTIONAL)**
+- Extract ALL business logic from existing screen
+- Create comprehensive service object (NOT class)
+- Include API calls, data transformation, validation
+- Add proper error handling and logging
+
+#### **Step 3: Create Custom Hook**
+- Manage UI state and Redux integration
+- Integrate service layer
+- Handle user interactions and navigation
+- Return clean interface for UI components
+
+#### **Step 4: Refactor Screen Component**
+- Keep ONLY UI rendering logic
+- Use custom hook for all state and handlers
+- Achieve ~50-100 lines maximum
+- Focus on component composition
+- **Use GlobalStyles and inline styling only**
+- **Wrap in ScrollView for responsiveness**
+
+#### **Step 5: Extract Reusable Components**
+- Identify common UI patterns
+- Create reusable components with proper props
+- Update existing screens to use new components
+- Document component usage and props
+
+### **Layered Architecture Benefits**
+- **Maintainability**: Clear separation of concerns
+- **Testability**: Services and hooks can be unit tested
+- **Reusability**: Components can be shared across screens
+- **Consistency**: All screens follow the same pattern
+- **Performance**: Optimized state management and rendering
+- **Scalability**: Easy to add new features and screens
+
+## CRITICAL DESIGN RULES
+
+### **Color Management**
+1. **NEVER use hex colors directly in components**
+2. **ALWAYS add new colors to `src/presentation/constants/Colors.ts` first**
+3. **Colors.ts MUST support both dark and light modes**
+4. **Import colors from constants and use them in components**
+
+```typescript
+// src/presentation/constants/Colors.ts
+export const Colors = {
+  primary: {
+    light: '#007AFF',
+    dark: '#0A84FF'
+  },
+  background: {
+    light: '#FFFFFF',
+    dark: '#000000'
+  },
+  text: {
+    light: '#000000',
+    dark: '#FFFFFF'
+  }
+  // Add new colors here
+};
+
+// Usage in components
+import { Colors } from '../constants/Colors';
+const backgroundColor = Colors.background.light; // or .dark based on theme
+```
+
+### **Styling Rules**
+1. **NO StyleSheet in screen or UI components**
+2. **Use GlobalStyles from `src/presentation/styles/GlobalStyles.tsx`**
+3. **Use inline styling to override GlobalStyles when needed**
+4. **When editing components used in multiple places, use inline styling instead of modifying GlobalStyles**
+
+```typescript
+// GlobalStyles.tsx
+export const GlobalStyles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: Colors.background.light,
+  },
+  text: {
+    fontSize: 16,
+    color: Colors.text.light,
+  }
+});
+
+// Usage in components
+import { GlobalStyles } from '../styles/GlobalStyles';
+
+// Use GlobalStyles
+<View style={GlobalStyles.container}>
+  <Text style={GlobalStyles.text}>Content</Text>
+</View>
+
+// Override with inline styling when needed
+<View style={[GlobalStyles.container, { paddingHorizontal: 20 }]}>
+  <Text style={[GlobalStyles.text, { fontSize: 18 }]}>Content</Text>
+</View>
+```
+
+### **Responsive Design**
+1. **Use percentage-based widths for responsiveness**
+2. **Wrap each screen in ScrollView**
+3. **Consider different screen sizes**
+4. **Use responsive design patterns**
+
+```typescript
+// Responsive component example
+<ScrollView style={GlobalStyles.container}>
+  <View style={{ width: '90%', alignSelf: 'center' }}>
+    <Text style={GlobalStyles.text}>Responsive content</Text>
+  </View>
+</ScrollView>
+```
+
+### **Performance Optimization**
+1. **Use FlashList instead of FlatList**
+2. **Implement proper memoization**
+3. **Avoid unnecessary re-renders**
+4. **Use proper key props**
+
+```typescript
+// FlashList usage
+import { FlashList } from '@shopify/flash-list';
+
+<FlashList
+  data={notes}
+  renderItem={({ item }) => <NoteItem note={item} />}
+  estimatedItemSize={100}
+  keyExtractor={(item) => item.id}
+/>
+```
+
+## Best Practices
+
+### Component Design
+- Keep components small and focused
+- Use composition over inheritance
+- Implement proper prop validation
+- Use default props where appropriate
+- Make components reusable and configurable
+
+### Navigation
+- Use typed navigation parameters
+- Implement proper back button handling
+- Use gesture navigation where appropriate
+- Handle deep linking if needed
+
+### SQLite Integration
+- Use react-native-sqlite-storage for local storage
+- Implement proper database initialization
+- Handle database errors gracefully
+- Use transactions for complex operations
+
+### Conflict Resolution
+- Use diff-match-patch for text merging
+- Implement proper conflict detection
+- Handle merge conflicts gracefully
+- Provide user feedback for conflicts
+
+### Network Handling
+- Use @react-native-community/netinfo for connectivity
+- Implement offline-first functionality
+- Handle network state changes
+- Provide appropriate user feedback
+
+## Common Patterns
+
+### Layered Architecture Patterns
+
+#### Service Layer Pattern (FUNCTIONAL)
+```typescript
+// src/application/services/NoteService.ts
+export const NoteService = {
+  /**
+   * Business logic method with proper documentation
+   */
+  validateNote: (note: NoteData): ValidationResult => {
+    // Validation logic
+  },
+
+  /**
+   * API integration with error handling
+   */
+  fetchNotes: async (): Promise<Note[]> => {
+    try {
+      const response = await apiCall();
+      return NoteService.transformApiData(response);
+    } catch (error) {
+      console.error('API error:', error);
+      throw NoteService.createErrorResponse(error);
+    }
+  },
+
+  /**
+   * SQLite operations
+   */
+  saveNoteToLocal: async (note: Note): Promise<void> => {
+    // Database logic
+  },
+
+  /**
+   * Data transformation
+   */
+  transformApiData: (apiData: any): Note[] => {
+    // Transform logic
+  }
+};
+```
+
+#### Custom Hook Pattern
+```typescript
+// src/presentation/hooks/useNoteList.ts
+export const useNoteList = ({ navigation }: Props) => {
+  // Redux state
+  const notes = useSelector((state: RootState) => state.notes.data);
+  
+  // Local state
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  
+  // Effects
+  useEffect(() => {
+    loadNotes();
+  }, []);
+  
+  // Handlers
+  const handleNotePress = useCallback((note: Note) => {
+    navigation.navigate('NoteEditor', { noteId: note.id });
+  }, [navigation]);
+  
+  return {
+    // State
+    notes,
+    loading,
+    error,
+    // Handlers
+    handleNotePress,
+    // Service for testing
+    service: NoteService
+  };
+};
+```
+
+#### Screen Component Pattern
+```typescript
+// src/presentation/screens/NoteListScreen.tsx
+const NoteListScreen = ({ navigation }: Props) => {
+  const {
+    notes,
+    loading,
+    error,
+    handleNotePress,
+  } = useNoteList({ navigation });
+
+  return (
+    <ScrollView style={GlobalStyles.container}>
+      <View style={{ width: '90%', alignSelf: 'center' }}>
+        <FlashList
+          data={notes}
+          renderItem={({ item }) => (
+            <NoteItem 
+              note={item} 
+              onPress={() => handleNotePress(item)}
+            />
+          )}
+          estimatedItemSize={100}
+          keyExtractor={(item) => item.id}
+        />
+      </View>
+    </ScrollView>
+  );
+};
+```
+
+#### Reusable Component Pattern
+```typescript
+// src/presentation/components/FlexibleComponent.tsx
+interface FlexibleComponentProps {
+  variant?: 'primary' | 'secondary';
+  size?: 'small' | 'large';
+  data: ItemType[];
+  onItemPress?: (item: ItemType) => void;
+  loading?: boolean;
+  error?: string;
+  emptyMessage?: string;
+  extraContent?: React.ReactNode;
+}
+
+const FlexibleComponent = ({ 
+  variant = 'primary',
+  size = 'large',
+  ...props 
+}: FlexibleComponentProps) => {
+  // Component logic using GlobalStyles and inline styling
+};
+```
+
+## Security
+- Never commit sensitive data or API keys
+- Use proper authentication mechanisms
+- Validate user inputs
+- Handle permissions properly
+- Use secure storage for sensitive data
+
+## Performance Monitoring
+- Monitor bundle size
+- Track render performance
+- Use proper loading indicators
+- Implement proper error boundaries
+- Monitor memory usage
+
+## Code Review Checklist
+
+### Architecture Compliance
+- [ ] **Layered architecture pattern is followed correctly**
+- [ ] **Service layer contains ALL business logic (FUNCTIONAL, NOT CLASSES)**
+- [ ] **Custom hook manages UI state and Redux integration**
+- [ ] **Screen component is minimal (50-100 lines) and UI-focused**
+- [ ] **Existing components are checked and reused where possible**
+- [ ] **New components are properly configurable and reusable**
+
+### Design Compliance
+- [ ] **NO hex colors used directly - added to Colors.ts first**
+- [ ] **NO StyleSheet in screen/UI components - using GlobalStyles**
+- [ ] **Colors.ts supports both dark and light modes**
+- [ ] **Responsive design with percentage-based widths**
+- [ ] **Each screen wrapped in ScrollView**
+- [ ] **FlashList used instead of FlatList where appropriate**
+
+### Code Quality
+- [ ] TypeScript types are properly defined
+- [ ] Components are reusable and well-structured
+- [ ] Styles follow the design system
+- [ ] Error handling is comprehensive
+- [ ] Performance implications are considered
+- [ ] Code follows DRY principles
+- [ ] Existing functionality is not broken
+- [ ] Each file has only one function and doesn't exceed 150 lines
+
+### Component Reusability
+- [ ] **Searched existing components before creating new ones**
+- [ ] **Extended existing components instead of duplicating**
+- [ ] **Created wrapper components for common patterns**
+- [ ] **Added proper configuration props for flexibility**
+- [ ] **Updated other screens to use new reusable components**
+- [ ] **Used inline styling to override instead of modifying GlobalStyles**
+
+### File Organization
+- [ ] **Read and understood every folder's purpose before working**
+- [ ] **Files placed in correct layers according to architecture**
+- [ ] **Types defined in appropriate type files**
+- [ ] **Services are functional, not classes**
+- [ ] **Components follow naming conventions** 

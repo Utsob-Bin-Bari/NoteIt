@@ -120,6 +120,7 @@ yarn open
 - **TypeScript**: 5.0.4
 - **Platforms**: iOS, Android
 - **Package Manager**: Yarn
+- **Architecture**: Clean Architecture with Layered Design
 
 ## 📦 Core Dependencies
 
@@ -149,6 +150,80 @@ yarn open
 ### Conflict Resolution & Data Synchronization
 - **diff-match-patch** (v1.0.5) - Google's algorithm for text comparison and merging
 
+## 🏗️ Project Architecture
+
+This project follows **Clean Architecture** principles with a layered design for maintainability, testability, and scalability.
+
+### Current Folder Structure
+
+```
+NoteIt/
+├── src/                          # Source code directory
+│   ├── domain/                   # Business logic layer (innermost)
+│   │   ├── entities/             # Core business entities and domain objects
+│   │   ├── validators/           # Domain-specific validation rules
+│   │   ├── data/                 # Domain data models and interfaces
+│   │   └── types/                # TypeScript type definitions
+│   │
+│   ├── application/              # Application logic layer (middle)
+│   │   ├── store/                # Redux store configuration
+│   │   ├── services/             # Business logic and use cases
+│   │   ├── context/              # React context providers
+│   │   └── utils/                # Application-level utilities
+│   │
+│   ├── infrastructure/           # External concerns layer
+│   │   ├── storage/              # Database and local storage
+│   │   ├── api/                  # HTTP client and API communication
+│   │   ├── validation/           # Infrastructure-level validation
+│   │   └── utils/                # Infrastructure utilities
+│   │
+│   └── presentation/             # UI layer (outermost)
+│       ├── screens/              # Screen components
+│       ├── components/           # Reusable UI components
+│       ├── navigation/           # Navigation configuration
+│       ├── hooks/                # Custom React hooks
+│       ├── styles/               # Styling and theming
+│       ├── utils/                # Presentation utilities
+│       └── constants/            # UI constants
+│
+├── android/                      # Android-specific files
+├── ios/                          # iOS-specific files
+├── __tests__/                    # Test files
+├── App.tsx                       # Main application component
+├── index.js                      # Application entry point
+└── package.json                  # Dependencies and scripts
+```
+
+### Architecture Principles
+
+#### **1. Domain Layer** (`src/domain/`)
+- **Purpose**: Contains business logic, entities, and core domain rules
+- **Dependencies**: No external dependencies
+- **Folders**: entities, validators, data, types
+
+#### **2. Application Layer** (`src/application/`)
+- **Purpose**: Orchestrates business logic and manages application state
+- **Dependencies**: Domain layer only
+- **Folders**: store, services, context, utils
+
+#### **3. Infrastructure Layer** (`src/infrastructure/`)
+- **Purpose**: Handles external concerns (databases, APIs, file systems)
+- **Dependencies**: Domain and Application layers
+- **Folders**: storage, api, validation, utils
+
+#### **4. Presentation Layer** (`src/presentation/`)
+- **Purpose**: User interface and user interaction
+- **Dependencies**: Application layer only
+- **Folders**: screens, components, navigation, hooks, styles, utils, constants
+
+### Benefits of This Architecture
+
+- **✅ Separation of Concerns**: Each layer has a specific responsibility
+- **✅ Testability**: Each layer can be tested independently
+- **✅ Maintainability**: Clear boundaries make code easier to maintain
+- **✅ Scalability**: Easy to add new features without affecting existing code
+- **✅ Dependency Rule**: Inner layers don't depend on outer layers
+
 ## 🔧 Development
 
 ### Making Changes
@@ -159,18 +234,6 @@ yarn open
 4. For a full reload:
    - **Android**: Press `R` twice or use Dev Menu (`Ctrl+M` / `Cmd+M`)
    - **iOS**: Press `R` in iOS Simulator
-
-### Project Structure
-
-```
-NoteIt/
-├── App.tsx                 # Main application component
-├── package.json           # Dependencies and scripts
-├── tsconfig.json          # TypeScript configuration
-├── android/               # Android-specific files
-├── ios/                   # iOS-specific files
-└── __tests__/            # Test files
-```
 
 ## 🐛 Troubleshooting
 
@@ -194,13 +257,14 @@ If you encounter environment setup issues, refer to the official React Native do
 - [React Native Documentation](https://reactnative.dev/docs/getting-started)
 - [React Navigation](https://reactnavigation.org/docs/getting-started)
 - [Redux Toolkit](https://redux-toolkit.js.org/introduction/getting-started)
+- [Clean Architecture](https://blog.cleancoder.com/uncle-bob/2012/08/13/the-clean-architecture.html)
 - [React Native SVG](https://github.com/react-native-svg/react-native-svg)
 
 ## 🤝 Contributing
 
 1. Fork the repository
 2. Create a feature branch
-3. Make your changes
+3. Make your changes following the layered architecture
 4. Run tests: `yarn test`
 5. Run linting: `yarn lint`
 6. Submit a pull request

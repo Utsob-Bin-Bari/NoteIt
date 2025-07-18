@@ -127,7 +127,7 @@ yarn open
 ### Navigation & UI Framework
 - **@react-navigation/native** (v7.1.14) - Core navigation library
 - **@react-navigation/stack** (v7.4.2) - Stack navigator for screen transitions
-- **react-native-screens** (v4.13.1) - Native navigation primitives
+- **react-native-screens** (v4.13.1) - Native navigation primitives with performance optimization
 - **react-native-safe-area-context** (v5.5.2) - Safe area handling
 - **react-native-gesture-handler** (v2.27.1) - Native gesture handling
 - **@react-native-masked-view/masked-view** (v0.3.2) - UI masking for transitions
@@ -276,6 +276,7 @@ SignUp Screen (No Header)
 ### **Navigation Features**
 
 - **TypeScript Support**: Fully typed navigation parameters
+- **Performance Optimization**: Native screen rendering with `enableScreens()` for improved performance
 - **Header Management**: Custom header styling with theme support
 - **Theme Integration**: Headers automatically adapt to light/dark themes
 - **Gesture Navigation**: Swipe-to-go-back functionality

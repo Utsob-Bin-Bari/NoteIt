@@ -5,6 +5,9 @@ import { AppProvider, AppContext } from './src/application/context/AppContext';
 import { useContext } from 'react';
 import { getColors } from './src/presentation/constants/Colors';
 import { ThemeType } from './src/domain/types/Theme';
+import { enableScreens } from 'react-native-screens';
+
+enableScreens();
 
 const AppContent = () => {
   const { theme } = useContext(AppContext) as { theme: ThemeType };

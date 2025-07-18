@@ -70,3 +70,8 @@
 # Commit 6: Create App Context to implement Dark and Light Theme
 * It's a really simple state to manage so I will use useContext here. 
 * I can integrated it in Redux store also. But let's have some fun.
+
+# Commit 7: Fix some design and Enable Screens
+* enableScreens() implemented which I forgot to implemented during navigation implementation.
+* Removed the back text from ios. 
+* Added border bottom for dark-light consitancy.

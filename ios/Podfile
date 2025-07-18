@@ -21,12 +21,14 @@ target 'NoteIt' do
     :path => config[:reactNativePath],
     # An absolute path to your application root.
     :app_path => "#{Pod::Config.instance.installation_root}/..",
-    #Enable Hermes for iOS
+    # Enable Hermes for iOS
     :hermes_enabled => true,
     # Enable New Architecture (Fabric + TurboModules)
     :fabric_enabled => true
-    
   )
+
+  # Add react-native-sqlite-storage pod
+  pod 'react-native-sqlite-storage', :path => '../node_modules/react-native-sqlite-storage'
 
   post_install do |installer|
     # https://github.com/facebook/react-native/blob/main/packages/react-native/scripts/react_native_pods.rb#L197-L202

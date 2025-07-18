@@ -1,6 +1,6 @@
 # NoteIt - React Native App
 
-A React Native application built with TypeScript for note-taking functionality.
+A React Native application built with TypeScript for note-taking functionality with offline-first capabilities and conflict resolution.
 
 ## 📋 Prerequisites
 
@@ -46,6 +46,12 @@ yarn install
 ```bash
 # Install Ruby dependencies for CocoaPods
 yarn pod-start
+
+# Or manually:
+cd ios
+bundle install
+bundle exec pod install
+cd ..
 ```
 
 ### Step 3: Android Setup
@@ -54,6 +60,11 @@ yarn pod-start
 # Clean Android build (if needed)
 yarn clean-android
 
+# Or manually:
+cd android
+./gradlew clean
+cd ..
+```
 
 ## 🏃‍♂️ Running the App
 
@@ -110,6 +121,34 @@ yarn open
 - **Platforms**: iOS, Android
 - **Package Manager**: Yarn
 
+## 📦 Core Dependencies
+
+### Navigation & UI Framework
+- **@react-navigation/native** (v7.1.14) - Core navigation library
+- **@react-navigation/stack** (v7.4.2) - Stack navigator for screen transitions
+- **react-native-screens** (v4.13.1) - Native navigation primitives
+- **react-native-safe-area-context** (v5.5.2) - Safe area handling
+- **react-native-gesture-handler** (v2.27.1) - Native gesture handling
+- **@react-native-masked-view/masked-view** (v0.3.2) - UI masking for transitions
+
+### State Management & Data Flow
+- **@reduxjs/toolkit** (v2.8.2) - Modern Redux with simplified setup
+- **react-redux** (v9.2.0) - React bindings for Redux
+
+### Performance & UI Components
+- **@shopify/flash-list** (v1.8.3) - High-performance list component
+- **react-native-svg** (v15.12.0) - SVG support for custom icons
+
+### Network & API Communication
+- **axios** (v1.10.0) - HTTP client for API requests
+- **@react-native-community/netinfo** (v11.4.1) - Network connectivity monitoring
+
+### Local Storage & Data Persistence
+- **react-native-sqlite-storage** (v6.0.1) - Direct SQLite database access
+
+### Conflict Resolution & Data Synchronization
+- **diff-match-patch** (v1.0.5) - Google's algorithm for text comparison and merging
+
 ## 🔧 Development
 
 ### Making Changes
@@ -141,6 +180,8 @@ NoteIt/
 2. **iOS build issues**: Run `yarn clean-ios` to reinstall pods
 3. **Android build issues**: Run `yarn clean-android` to clean build
 4. **Dependency issues**: Delete `node_modules` and `yarn.lock`, then run `yarn install`
+5. **Navigation issues**: Ensure `react-native-gesture-handler` is imported at the top of your entry file
+6. **SQLite issues**: Verify native linking with `yarn pod-install` for iOS
 
 ### Environment Setup Issues
 
@@ -151,8 +192,9 @@ If you encounter environment setup issues, refer to the official React Native do
 ## 📚 Learn More
 
 - [React Native Documentation](https://reactnative.dev/docs/getting-started)
-- [React Native Blog](https://reactnative.dev/blog)
-- [TypeScript with React Native](https://reactnative.dev/docs/typescript)
+- [React Navigation](https://reactnavigation.org/docs/getting-started)
+- [Redux Toolkit](https://redux-toolkit.js.org/introduction/getting-started)
+- [React Native SVG](https://github.com/react-native-svg/react-native-svg)
 
 ## 🤝 Contributing
 

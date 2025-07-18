@@ -18,7 +18,7 @@
 * README.md Updated with project setup instructions & Environment configuration.
   Reason: As per requirement and best practices.
 
-# Commit 3: Make technical decision and Add all necessary Packages.
+# Commit 3: Make technical decision and Add all necessary Packages
 * Reason: With base model Apple Macbook M1 it's time consuming to build application again and agian
   with each dependency. So deciding which packages are required at early stage and install all at once is better.
 
@@ -63,6 +63,10 @@
   coding styles.
 * Add project structure to the README.md file 
 
-# Commit 5: Create simple page, Implement Navigation. 
+# Commit 5: Create simple page, Implement Navigation
 * All Pages are created with simple text.
 * Stack Navigator has been used to navigate between them.
+
+# Commit 6: Create App Context to implement Dark and Light Theme
+* It's a really simple state to manage so I will use useContext here. 
+* I can integrated it in Redux store also. But let's have some fun.

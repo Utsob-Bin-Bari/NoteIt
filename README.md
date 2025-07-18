@@ -164,11 +164,13 @@ NoteIt/
 │   │   ├── validators/           # Domain-specific validation rules
 │   │   ├── data/                 # Domain data models and interfaces
 │   │   └── types/                # TypeScript type definitions
+│   │       └── Theme.ts          # Theme-related type definitions
 │   │
 │   ├── application/              # Application logic layer (middle)
 │   │   ├── store/                # Redux store configuration
 │   │   ├── services/             # Business logic and use cases
-│   │   ├── context/              # React context providers
+│   │   ├── context/              # React context providers (theme management)
+│   │   │   └── AppContext.tsx    # Application-wide context (theme state)
 │   │   └── utils/                # Application-level utilities
 │   │
 │   ├── infrastructure/           # External concerns layer
@@ -191,8 +193,11 @@ NoteIt/
 │       │       └── StackNavigator.ts  # TypeScript navigation types
 │       ├── hooks/                # Custom React hooks
 │       ├── styles/               # Styling and theming
+│       │   ├── GlobalStyles.ts   # Global application styles
+│       │   └── CustomHeaderStyle.ts # Navigation header styling
 │       ├── utils/                # Presentation utilities
 │       └── constants/            # UI constants
+│           └── Colors.tsx        # Color definitions for theming
 │
 ├── android/                      # Android-specific files
 ├── ios/                          # iOS-specific files
@@ -271,10 +276,25 @@ SignUp Screen (No Header)
 ### **Navigation Features**
 
 - **TypeScript Support**: Fully typed navigation parameters
-- **Header Management**: Custom header visibility per screen
+- **Header Management**: Custom header styling with theme support
+- **Theme Integration**: Headers automatically adapt to light/dark themes
 - **Gesture Navigation**: Swipe-to-go-back functionality
 - **Safe Area Handling**: Proper layout on devices with notches
 - **Screen Transitions**: Smooth animations between screens
+
+### **Styling & Theming**
+
+#### **Theme System**
+- **Dynamic Theming**: Built-in light and dark mode support
+- **Context-Based**: Theme state managed through React Context
+- **Color Management**: Centralized color definitions in `Colors.tsx`
+- **Responsive Headers**: Navigation headers adapt to current theme
+
+#### **Styling Architecture**
+- **GlobalStyles**: Centralized styling definitions in `GlobalStyles.ts`
+- **Custom Headers**: Specialized header styling in `CustomHeaderStyle.ts`
+- **Theme-Aware Colors**: All colors support both light and dark variants
+- **Consistent Design**: Unified styling approach across all screens
 
 ## 🔧 Development
 

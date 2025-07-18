@@ -1,21 +1,13 @@
-
-import { StatusBar, StyleSheet, View, Text } from 'react-native';
+import StackNavigator from './src/presentation/navigation/stacks/StackNavigator';
+import { NavigationContainer } from '@react-navigation/native';
+import { StatusBar } from 'react-native';
 
 function App() {
   return (
-    <View style={styles.container}>
+    <NavigationContainer>
       <StatusBar barStyle={'dark-content'} />
-      <Text>Let's Build a React Native App!</Text>
-    </View>
+      <StackNavigator />
+    </NavigationContainer>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-});
-
 export default App;

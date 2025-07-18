@@ -63,4 +63,6 @@
   coding styles.
 * Add project structure to the README.md file 
 
- 
+# Commit 5: Create simple page, Implement Navigation. 
+* All Pages are created with simple text.
+* Stack Navigator has been used to navigate between them.

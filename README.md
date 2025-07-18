@@ -179,8 +179,16 @@ NoteIt/
 │   │
 │   └── presentation/             # UI layer (outermost)
 │       ├── screens/              # Screen components
+│       │   ├── LoginScreen.tsx   # User authentication screen
+│       │   ├── SignUpScreen.tsx  # User registration screen
+│       │   ├── HomeScreen.tsx    # Main notes list screen
+│       │   └── NoteScreen.tsx    # Individual note editing screen
 │       ├── components/           # Reusable UI components
 │       ├── navigation/           # Navigation configuration
+│       │   ├── stacks/           # Stack navigator setup
+│       │   │   └── StackNavigator.tsx # Main navigation stack
+│       │   └── types/            # Navigation type definitions
+│       │       └── StackNavigator.ts  # TypeScript navigation types
 │       ├── hooks/                # Custom React hooks
 │       ├── styles/               # Styling and theming
 │       ├── utils/                # Presentation utilities
@@ -223,6 +231,50 @@ NoteIt/
 - **✅ Maintainability**: Clear boundaries make code easier to maintain
 - **✅ Scalability**: Easy to add new features without affecting existing code
 - **✅ Dependency Rule**: Inner layers don't depend on outer layers
+
+## 🧭 Navigation & Screen Architecture
+
+### **Navigation Flow**
+
+The app uses a **Stack Navigator** with the following screen flow:
+
+```
+Login Screen (No Header) → Home Screen → Note Screen
+     ↓
+SignUp Screen (No Header)
+```
+
+### **Screen Details**
+
+#### **Authentication Screens**
+- **LoginScreen**: User login with email/password authentication
+  - **Header**: Hidden for clean, full-screen experience
+  - **Navigation**: Routes to Home screen on successful login
+  - **Features**: Form validation, error handling, "Sign Up" link
+
+- **SignUpScreen**: User registration with account creation
+  - **Header**: Hidden for clean, full-screen experience
+  - **Navigation**: Routes to Home screen on successful registration
+  - **Features**: Form validation, password confirmation, "Login" link
+
+#### **Main App Screens**
+- **HomeScreen**: Main dashboard displaying user's notes
+  - **Header**: Visible with navigation title
+  - **Navigation**: Routes to Note screen for editing
+  - **Features**: Notes list, search functionality, add new note
+
+- **NoteScreen**: Individual note editing and viewing
+  - **Header**: Visible with back navigation
+  - **Navigation**: Routes back to Home screen
+  - **Features**: Rich text editing, save functionality, conflict resolution
+
+### **Navigation Features**
+
+- **TypeScript Support**: Fully typed navigation parameters
+- **Header Management**: Custom header visibility per screen
+- **Gesture Navigation**: Swipe-to-go-back functionality
+- **Safe Area Handling**: Proper layout on devices with notches
+- **Screen Transitions**: Smooth animations between screens
 
 ## 🔧 Development
 

@@ -92,6 +92,8 @@
 * Make Log In Page with visibility toggle and custom component.
 * Keep dark-light mode consistant. 
 
-
-
+# Commit 11: Create and Implement Custom Dark-Light Icons and Network Availble Icons.
+* Create Dark-Light icons using react-native-svgs.
+* Create Network On-Off icons usering react-native-svgs.
+* Implement @react-native-community/netinfo to check netword connectivity.
 

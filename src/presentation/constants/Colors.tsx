@@ -11,5 +11,6 @@ export const getColors = (theme: ThemeType) => {
     buttonText: theme === 'dark' ? '#FFFFFF' : '#FFFFFF',
     inputBackground: theme === 'dark' ? '#1A1A1A' : '#FFFFFF',
     iconGrey: theme === 'dark' ? '#B0B0B0' : '#6B7280',
+    networkConnected: theme === 'dark' ? '#4A9EFF' : '#007AFF',
   };
 };

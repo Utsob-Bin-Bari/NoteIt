@@ -7,7 +7,7 @@ import { ThemeType } from '../../domain/types/theme/theme';
 const NoteScreen = () => {  
     const { theme } = useContext(AppContext) as { theme: ThemeType };
     return (
-        <View style={GlobalStyles(theme).container}>
+        <View style={GlobalStyles(theme).mainContainer}>
             <Text style={GlobalStyles(theme).text}>Note Screen</Text>
             <View style={GlobalStyles(theme).container}></View>
         </View>

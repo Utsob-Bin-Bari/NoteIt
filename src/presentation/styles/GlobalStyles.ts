@@ -16,7 +16,6 @@ export const GlobalStyles = (theme: ThemeType) => StyleSheet.create({
      fontSize: 32, 
      lineHeight:40,
      fontWeight: 'bold', 
-     marginBottom:10, 
      textAlign: 'center' 
   },
   text:{

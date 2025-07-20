@@ -7,11 +7,13 @@ import { useLogin } from '../hooks/useLogin';
 import CustomTextInput from '../components/CustomTextInput';
 import CustomButton from '../components/CustomButton';
 import { getColors } from '../constants/Colors';
-import { EyeIcon, EyeOffIcon } from '../components/icons';
+import { EyeIcon, EyeOffIcon, SunIcon, MoonIcon, WiFiOnlineIcon, WiFiOfflineIcon } from '../components/icons';
+import { useNetworkStatus } from '../hooks/useNetworkStatus';
 
 const LoginScreen = () => {
   const { theme, toggleTheme } = useContext(AppContext) as { theme: ThemeType, toggleTheme: () => void };
   const colors = getColors(theme);
+  const { isConnected } = useNetworkStatus();
   
   const {
     email,
@@ -31,9 +33,26 @@ const LoginScreen = () => {
       <View style={[GlobalStyles(theme).container,{paddingTop:Platform.OS === 'android' ? 72 : 20}]}>
         <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{flex:1}}>
         <ScrollView>
-          <Text style={GlobalStyles(theme).titleText}>
-            Login
-          </Text>
+          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+            <Text style={GlobalStyles(theme).titleText}>
+              Login
+            </Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+              {isConnected ? 
+                <WiFiOnlineIcon color={colors.networkConnected} width={20} height={20} /> : 
+                <WiFiOfflineIcon color={colors.iconGrey} width={20} height={20} />
+              }
+              <TouchableOpacity 
+                onPress={toggleTheme}
+                style={{ padding: 8, marginLeft: 12 }}
+              >
+                {theme === 'light' ? 
+                  <MoonIcon color={colors.primary} width={24} height={24} /> : 
+                  <SunIcon color={colors.primary} width={24} height={24} />
+                }
+              </TouchableOpacity>
+            </View>
+          </View>
           <Text style={[GlobalStyles(theme).mediumText,{marginBottom:20,textAlign:'left'}]}>Welcome to <Text style={GlobalStyles(theme).primaryText}>NoteIt </Text>! Please enter your login details.</Text>
 
           <CustomTextInput
@@ -71,15 +90,6 @@ const LoginScreen = () => {
                 <Text style={GlobalStyles(theme).linkText}>Sign Up</Text>
             </TouchableOpacity>
           </View>
-
-          <CustomButton
-            text={`Theme: ${theme}`}
-            onPress={toggleTheme}
-            backgroundColor="transparent"
-            textColor={colors.text}
-            borderColor={colors.border}
-            height={40}
-          />
         </ScrollView>
         </KeyboardAvoidingView>
       </View>

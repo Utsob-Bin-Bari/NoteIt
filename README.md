@@ -144,8 +144,9 @@ yarn open
 
 ### Network & API Communication
 - **axios** (v1.10.0) - HTTP client for API requests with interceptors
-- **@react-native-community/netinfo** (v11.4.1) - Network connectivity monitoring
+- **@react-native-community/netinfo** (v11.4.1) - Network connectivity monitoring with real-time status
 - **Automatic 401 Handling** - Session expiry detection with auto-redirect to login
+- **Network Status Indicators** - Visual WiFi icons showing online/offline status in headers
 
 ### Local Storage & Database
 - **react-native-sqlite-storage** (v6.0.1) - SQLite database with offline-first capabilities
@@ -195,6 +196,7 @@ NoteIt/
 │   │   │   └── interceptor/      # Request/response interceptors
 │   │   ├── validation/           # Infrastructure-level validation
 │   │   └── utils/                # Infrastructure utilities
+│   │       └── NetworkService.ts # Network connectivity management
 │   │
 │   └── presentation/             # UI layer (outermost)
 │       ├── screens/              # Screen components
@@ -205,7 +207,14 @@ NoteIt/
 │       ├── components/           # Reusable UI components
 │       │   ├── CustomTextInput.tsx # Theme-aware text input with password visibility
 │       │   ├── CustomButton.tsx  # Configurable button component
-│       │   └── icons/            # SVG icon components (eye icons)
+│       │   └── icons/            # Custom SVG icon components
+│       │       ├── EyeIcon.tsx   # Password visibility (show)
+│       │       ├── EyeOffIcon.tsx # Password visibility (hide)
+│       │       ├── SunIcon.tsx   # Light mode theme indicator
+│       │       ├── MoonIcon.tsx  # Dark mode theme indicator
+│       │       ├── WiFiOnlineIcon.tsx # Network connected status
+│       │       ├── WiFiOfflineIcon.tsx # Network disconnected status
+│       │       └── index.ts      # Centralized icon exports
 │       ├── navigation/           # Navigation configuration
 │       │   ├── stacks/           # Stack navigator setup
 │       │   │   └── StackNavigator.tsx # Main navigation stack
@@ -213,7 +222,8 @@ NoteIt/
 │       │       └── StackNavigator.ts  # TypeScript navigation types
 │       ├── hooks/                # Custom React hooks
 │       │   ├── useLogin.ts       # Login form state and validation hook
-│       │   └── useSignup.ts      # Signup form state and validation hook
+│       │   ├── useSignup.ts      # Signup form state and validation hook
+│       │   └── useNetworkStatus.ts # Network connectivity status hook
 │       ├── styles/               # Styling and theming
 │       │   ├── GlobalStyles.ts   # Global application styles
 │       │   └── CustomHeaderStyle.ts # Navigation header styling
@@ -268,13 +278,19 @@ NoteIt/
 ### **Custom UI Components**
 - **CustomTextInput**: Theme-aware text input with password visibility toggle
 - **CustomButton**: Configurable button with theme support and loading states
-- **Eye Icons**: SVG-based password visibility indicators with theme colors
+- **SVG Icon System**: Complete set of custom React Native SVG icons
+  - **Eye Icons**: Password visibility indicators (EyeIcon, EyeOffIcon)
+  - **Theme Icons**: Sun and Moon icons for light/dark mode switching
+  - **Network Icons**: WiFi status indicators (WiFiOnlineIcon, WiFiOfflineIcon)
+  - **Theme-Aware Colors**: All icons adapt to current theme with proper contrast
 
 ### **Authentication Features**
 - **Form Validation**: Real-time email and password validation
-- **Password Security**: Secure text entry with visibility toggle
+- **Password Security**: Secure text entry with SVG eye icon visibility toggle
 - **Error Handling**: User-friendly error messages and loading states
-- **Theme Integration**: All components adapt to light/dark themes
+- **Network Status**: Real-time connectivity indicators with blue/grey color coding
+- **Theme Toggle**: Sun/Moon SVG icons for instant light/dark mode switching
+- **Visual Feedback**: All icons provide immediate visual status feedback
 - **Layered Architecture**: Separation of UI, business logic, and data layers
 
 ### **Screen Components**
@@ -322,6 +338,15 @@ NoteIt/
 - **Request Configuration**: Flexible parameter and header management
 - **Response Processing**: Standardized data extraction and error handling
 
+### **Network Status Management**
+- **Real-Time Monitoring**: Live network connectivity detection using @react-native-community/netinfo
+- **Visual Indicators**: Custom SVG WiFi icons showing connection status
+- **Color-Coded Status**: Blue icons when connected, grey when offline
+- **Universal Coverage**: Network status visible on all screens (Login, SignUp, Home, Note)
+- **Automatic Updates**: Instant icon changes when network state changes
+- **Layered Architecture**: NetworkService in infrastructure, useNetworkStatus hook in presentation
+- **No Manual Refresh**: Detects WiFi, cellular, airplane mode changes automatically
+
 ## 🧭 Navigation & Screen Architecture
 
 ### **Navigation Flow**
@@ -340,21 +365,21 @@ SignUp Screen (No Header)
 - **LoginScreen**: User login with email/password authentication
   - **Header**: Hidden for clean, full-screen experience
   - **Navigation**: Routes to Home screen on successful login
-  - **Features**: Real-time validation, password visibility toggle, error display, theme toggle
+  - **Features**: Real-time validation, SVG eye icon password toggle, blue/grey network status, sun/moon theme toggle
 
 - **SignUpScreen**: User registration with account creation
   - **Header**: Hidden for clean, full-screen experience
   - **Navigation**: Routes to Home screen on successful registration
-  - **Features**: Form validation, password confirmation with visibility toggles, error handling
+  - **Features**: Form validation, dual password visibility toggles, network status indicator, theme switching
 
 #### **Main App Screens**
 - **HomeScreen**: Main dashboard displaying user's notes
-  - **Header**: Visible with navigation title
+  - **Header**: Visible with navigation title, network status, and theme toggle
   - **Navigation**: Routes to Note screen for editing
   - **Features**: Notes list, search functionality, add new note, offline support
 
 - **NoteScreen**: Individual note editing and viewing
-  - **Header**: Visible with back navigation
+  - **Header**: Visible with back navigation, network status, and theme toggle
   - **Navigation**: Routes back to Home screen
   - **Features**: Rich text editing, save functionality, conflict resolution, offline editing
 
@@ -362,8 +387,10 @@ SignUp Screen (No Header)
 
 - **TypeScript Support**: Fully typed navigation parameters
 - **Performance Optimization**: Native screen rendering with `enableScreens()` for improved performance
-- **Header Management**: Custom header styling with theme support
+- **Smart Headers**: Custom header styling with integrated status indicators
+- **Dual Icon System**: Network status (left) + theme toggle (right) in all headers
 - **Theme Integration**: Headers automatically adapt to light/dark themes
+- **Real-Time Updates**: Header icons update instantly with network/theme changes
 - **Gesture Navigation**: Swipe-to-go-back functionality
 - **Safe Area Handling**: Proper layout on devices with notches
 - **Screen Transitions**: Smooth animations between screens
@@ -372,15 +399,22 @@ SignUp Screen (No Header)
 
 #### **Theme System**
 - **Dynamic Theming**: Built-in light and dark mode support with instant switching
+- **Visual Theme Toggle**: Custom Sun/Moon SVG icons for intuitive theme switching
 - **Context-Based**: Theme state managed through React Context
 - **Color Management**: Centralized color definitions in `Colors.tsx` with theme variants
-- **Icon Colors**: Subtle grey tones for icons that adapt to light/dark themes
+- **Smart Icon Colors**: 
+  - Network status: Blue (connected) / Grey (offline)
+  - Theme icons: Primary color for brand consistency
+  - UI icons: Adaptive grey tones for subtle appearance
+- **Universal Availability**: Theme toggle accessible on every screen
 - **Responsive Headers**: Navigation headers adapt to current theme
 
 #### **Styling Architecture**
 - **GlobalStyles**: Centralized styling definitions with theme functions
 - **Custom Components**: Theme-aware UI components with consistent styling
-- **Color Variants**: Primary, secondary, border, background, text, and icon colors
+- **SVG Icon System**: Scalable vector graphics for crisp display at any size
+- **Color Variants**: Primary, secondary, border, background, text, icon, and network colors
+- **Visual Hierarchy**: Different icon sizes for importance (network: 20px, theme: 24px)
 - **Responsive Design**: Flexible layouts that work across all screen sizes
 
 ## 🔧 Development

@@ -7,13 +7,13 @@ import { StackNavigatorParamList } from '../types/StackNavigator';
 import { ThemeType } from '../../../domain/types/theme/theme';
 import { useContext } from 'react';
 import { AppContext } from '../../../application/context/AppContext';
-import { getHeaderOptions } from '../../styles/CustomHeaderStyle';
+import { getHeaderOptions } from '../../styles/CustomHeaderStyle';  
 
 const Stack = createStackNavigator<StackNavigatorParamList>();
 
 const StackNavigator = () => {
-    const { theme } = useContext(AppContext) as { theme: ThemeType };
-    const headerOptions = getHeaderOptions(theme);
+    const { theme, toggleTheme } = useContext(AppContext) as { theme: ThemeType, toggleTheme: () => void };
+    const headerOptions = getHeaderOptions(theme, toggleTheme);
     
     return (
         <Stack.Navigator initialRouteName="Login">

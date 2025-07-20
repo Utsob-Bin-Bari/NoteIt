@@ -7,11 +7,13 @@ import { useSignup } from '../hooks/useSignup';
 import CustomTextInput from '../components/CustomTextInput';
 import CustomButton from '../components/CustomButton';
 import { getColors } from '../constants/Colors';
-import { EyeIcon, EyeOffIcon } from '../components/icons';
+import { EyeIcon, EyeOffIcon, SunIcon, MoonIcon, WiFiOnlineIcon, WiFiOfflineIcon } from '../components/icons';
+import { useNetworkStatus } from '../hooks/useNetworkStatus';
 
 const SignUpScreen = () => {
-  const { theme } = useContext(AppContext) as { theme: ThemeType };
+  const { theme, toggleTheme } = useContext(AppContext) as { theme: ThemeType, toggleTheme: () => void };
   const colors = getColors(theme);
+  const { isConnected } = useNetworkStatus();
   
   const {
     loading,
@@ -37,9 +39,26 @@ const SignUpScreen = () => {
       <View style={[GlobalStyles(theme).container,{paddingTop:Platform.OS === 'android' ? 72 : 20}]}>
         <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{flex:1}}>
         <ScrollView showsVerticalScrollIndicator={false}>
-        <Text style={GlobalStyles(theme).titleText}>
-          Sign Up
-        </Text>
+        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+          <Text style={GlobalStyles(theme).titleText}>
+            Sign Up
+          </Text>
+                     <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+             {isConnected ? 
+               <WiFiOnlineIcon color={colors.networkConnected} width={20} height={20} /> : 
+               <WiFiOfflineIcon color={colors.iconGrey} width={20} height={20} />
+             }
+            <TouchableOpacity 
+              onPress={toggleTheme}
+              style={{ padding: 8, marginLeft: 12 }}
+            >
+              {theme === 'light' ? 
+                <MoonIcon color={colors.primary} width={24} height={24} /> : 
+                <SunIcon color={colors.primary} width={24} height={24} />
+              }
+            </TouchableOpacity>
+          </View>
+        </View>
         <Text style={[GlobalStyles(theme).mediumText,{marginBottom:20,textAlign:'left'}]}>Welcome to <Text style={GlobalStyles(theme).primaryText}>NoteIt </Text>! Please enter your personal details to create an account.</Text>
         <CustomTextInput
           placeholder="Full Name"
@@ -102,11 +121,13 @@ const SignUpScreen = () => {
         />
 
         <View style={[GlobalStyles(theme).rowContainer,{marginBottom:10}]}>
-          <Text style={GlobalStyles(theme).mediumText}>Don't have an account?</Text>
+          <Text style={GlobalStyles(theme).mediumText}>Already have an account?</Text>
             <TouchableOpacity onPress={navigateToLogin}>
                 <Text style={GlobalStyles(theme).linkText}>Login</Text>
             </TouchableOpacity>
           </View>
+
+
         </ScrollView>
         </KeyboardAvoidingView>
       </View>

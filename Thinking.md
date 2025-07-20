@@ -83,6 +83,15 @@
 
 
 # Commit 9: All Api Conifuration & Error Handling 
-* All api request is implemnted properly with type safety
-* Interceptor is used if Access Token expires it will take to login page
-* Config.js is added to keep the base url and default settings like timeout
+* All api request is implemnted properly with type safety.
+* Interceptor is used if Access Token expires it will take to login page.
+* Config.js is added to keep the base url and default settings like timeout.
+
+# Commit 10: Authentication Page Design
+* Make Sign Up Page with visibility toggle and custom component.
+* Make Log In Page with visibility toggle and custom component.
+* Keep dark-light mode consistant. 
+
+
+
+

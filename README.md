@@ -140,6 +140,7 @@ yarn open
 ### Performance & UI Components
 - **@shopify/flash-list** (v1.8.3) - High-performance list component
 - **react-native-svg** (v15.12.0) - SVG support for custom icons
+- **Custom UI Components** - Reusable TextInput and Button components with theme support
 
 ### Network & API Communication
 - **axios** (v1.10.0) - HTTP client for API requests with interceptors
@@ -177,6 +178,7 @@ NoteIt/
 │   ├── application/              # Application logic layer (middle)
 │   │   ├── store/                # Redux store configuration
 │   │   ├── services/             # Business logic and use cases
+│   │   │   └── auth/             # Authentication services (login, signup, validation)
 │   │   ├── context/              # React context providers (theme management)
 │   │   │   └── AppContext.tsx    # Application-wide context (theme state)
 │   │   └── utils/                # Application-level utilities
@@ -196,17 +198,22 @@ NoteIt/
 │   │
 │   └── presentation/             # UI layer (outermost)
 │       ├── screens/              # Screen components
-│       │   ├── LoginScreen.tsx   # User authentication screen
-│       │   ├── SignUpScreen.tsx  # User registration screen
+│       │   ├── LoginScreen.tsx   # User authentication screen with validation
+│       │   ├── SignUpScreen.tsx  # User registration screen with validation
 │       │   ├── HomeScreen.tsx    # Main notes list screen
 │       │   └── NoteScreen.tsx    # Individual note editing screen
 │       ├── components/           # Reusable UI components
+│       │   ├── CustomTextInput.tsx # Theme-aware text input with password visibility
+│       │   ├── CustomButton.tsx  # Configurable button component
+│       │   └── icons/            # SVG icon components (eye icons)
 │       ├── navigation/           # Navigation configuration
 │       │   ├── stacks/           # Stack navigator setup
 │       │   │   └── StackNavigator.tsx # Main navigation stack
 │       │   └── types/            # Navigation type definitions
 │       │       └── StackNavigator.ts  # TypeScript navigation types
 │       ├── hooks/                # Custom React hooks
+│       │   ├── useLogin.ts       # Login form state and validation hook
+│       │   └── useSignup.ts      # Signup form state and validation hook
 │       ├── styles/               # Styling and theming
 │       │   ├── GlobalStyles.ts   # Global application styles
 │       │   └── CustomHeaderStyle.ts # Navigation header styling
@@ -255,6 +262,26 @@ NoteIt/
 - **✅ Scalability**: Easy to add new features without affecting existing code
 - **✅ Dependency Rule**: Inner layers don't depend on outer layers
 - **✅ Offline-First**: Complete offline functionality with automatic sync
+
+## 🎨 UI Components & Authentication
+
+### **Custom UI Components**
+- **CustomTextInput**: Theme-aware text input with password visibility toggle
+- **CustomButton**: Configurable button with theme support and loading states
+- **Eye Icons**: SVG-based password visibility indicators with theme colors
+
+### **Authentication Features**
+- **Form Validation**: Real-time email and password validation
+- **Password Security**: Secure text entry with visibility toggle
+- **Error Handling**: User-friendly error messages and loading states
+- **Theme Integration**: All components adapt to light/dark themes
+- **Layered Architecture**: Separation of UI, business logic, and data layers
+
+### **Screen Components**
+- **LoginScreen**: Clean authentication with email/password
+- **SignUpScreen**: Registration with password confirmation
+- **Responsive Design**: ScrollView containers for all screen sizes
+- **Keyboard Handling**: Proper KeyboardAvoidingView implementation
 
 ## 💾 Database Features
 
@@ -313,12 +340,12 @@ SignUp Screen (No Header)
 - **LoginScreen**: User login with email/password authentication
   - **Header**: Hidden for clean, full-screen experience
   - **Navigation**: Routes to Home screen on successful login
-  - **Features**: Form validation, error handling, "Sign Up" link
+  - **Features**: Real-time validation, password visibility toggle, error display, theme toggle
 
 - **SignUpScreen**: User registration with account creation
   - **Header**: Hidden for clean, full-screen experience
   - **Navigation**: Routes to Home screen on successful registration
-  - **Features**: Form validation, password confirmation, "Login" link
+  - **Features**: Form validation, password confirmation with visibility toggles, error handling
 
 #### **Main App Screens**
 - **HomeScreen**: Main dashboard displaying user's notes
@@ -344,16 +371,17 @@ SignUp Screen (No Header)
 ### **Styling & Theming**
 
 #### **Theme System**
-- **Dynamic Theming**: Built-in light and dark mode support
+- **Dynamic Theming**: Built-in light and dark mode support with instant switching
 - **Context-Based**: Theme state managed through React Context
-- **Color Management**: Centralized color definitions in `Colors.tsx`
+- **Color Management**: Centralized color definitions in `Colors.tsx` with theme variants
+- **Icon Colors**: Subtle grey tones for icons that adapt to light/dark themes
 - **Responsive Headers**: Navigation headers adapt to current theme
 
 #### **Styling Architecture**
-- **GlobalStyles**: Centralized styling definitions in `GlobalStyles.ts`
-- **Custom Headers**: Specialized header styling in `CustomHeaderStyle.ts`
-- **Theme-Aware Colors**: All colors support both light and dark variants
-- **Consistent Design**: Unified styling approach across all screens
+- **GlobalStyles**: Centralized styling definitions with theme functions
+- **Custom Components**: Theme-aware UI components with consistent styling
+- **Color Variants**: Primary, secondary, border, background, text, and icon colors
+- **Responsive Design**: Flexible layouts that work across all screen sizes
 
 ## 🔧 Development
 

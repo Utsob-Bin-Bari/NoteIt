@@ -1,4 +1,4 @@
-import { View, Text, TouchableOpacity } from 'react-native';
+import { View, Text, TouchableOpacity,SafeAreaView} from 'react-native';
 import React, { useContext } from 'react';
 import { GlobalStyles } from '../styles/GlobalStyles';
 import { useNavigation } from '@react-navigation/native';
@@ -9,14 +9,16 @@ import { ThemeType } from '../../domain/types/theme/theme';
 
 const HomeScreen = () => {
     const navigation = useNavigation<StackNavigationProp<StackNavigatorParamList>>();
-const { theme } = useContext(AppContext) as { theme: ThemeType };
+    const { theme } = useContext(AppContext) as { theme: ThemeType };
     return (
+        <SafeAreaView style={GlobalStyles(theme).mainContainer}>
         <View style={GlobalStyles(theme).container}>
             <Text style={GlobalStyles(theme).text}>Home Screen</Text>
             <TouchableOpacity onPress={() => navigation.navigate('Note')}>
                 <Text style={GlobalStyles(theme).text}>Note</Text>
             </TouchableOpacity>
         </View>
+        </SafeAreaView>
     );
 };
 

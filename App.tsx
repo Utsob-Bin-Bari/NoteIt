@@ -1,6 +1,6 @@
 import StackNavigator from './src/presentation/navigation/stacks/StackNavigator';
 import { NavigationContainer } from '@react-navigation/native';
-import { StatusBar } from 'react-native';
+import { StatusBar, SafeAreaView } from 'react-native';
 import { AppProvider, AppContext } from './src/application/context/AppContext';
 import { useContext, useEffect } from 'react';
 import { getColors } from './src/presentation/constants/Colors';
@@ -17,8 +17,10 @@ const AppContent = () => {
   const { theme } = useContext(AppContext) as { theme: ThemeType };
   return (
     <NavigationContainer>
-      <StatusBar barStyle={theme === 'dark' ? 'light-content' : 'dark-content'} backgroundColor={getColors(theme).background} />
+      <SafeAreaView style={{flex:1,backgroundColor:getColors(theme).background}}>
+      <StatusBar barStyle={theme === 'dark' ? 'light-content' : 'dark-content'} backgroundColor={getColors(theme).background}/>
       <StackNavigator />
+      </SafeAreaView>
     </NavigationContainer>
   );
 };

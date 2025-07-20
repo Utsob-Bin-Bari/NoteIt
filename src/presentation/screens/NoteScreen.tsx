@@ -2,7 +2,7 @@ import { View, Text } from 'react-native';
 import React, { useContext } from 'react';
 import { GlobalStyles } from '../styles/GlobalStyles';
 import { AppContext } from '../../application/context/AppContext';
-import { ThemeType } from '../../domain/types/Theme/theme';
+import { ThemeType } from '../../domain/types/theme/theme';
 
 const NoteScreen = () => {  
     const { theme } = useContext(AppContext) as { theme: ThemeType };

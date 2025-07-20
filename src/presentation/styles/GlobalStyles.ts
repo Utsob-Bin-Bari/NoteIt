@@ -1,6 +1,6 @@
 import { StyleSheet } from 'react-native';
 import { getColors } from '../constants/Colors';
-import { ThemeType } from '../../domain/types/Theme/theme';
+import { ThemeType } from '../../domain/types/theme/theme';
 export const GlobalStyles = (theme: ThemeType) => StyleSheet.create({
   container: {
     flex: 1,

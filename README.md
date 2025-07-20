@@ -142,8 +142,9 @@ yarn open
 - **react-native-svg** (v15.12.0) - SVG support for custom icons
 
 ### Network & API Communication
-- **axios** (v1.10.0) - HTTP client for API requests
+- **axios** (v1.10.0) - HTTP client for API requests with interceptors
 - **@react-native-community/netinfo** (v11.4.1) - Network connectivity monitoring
+- **Automatic 401 Handling** - Session expiry detection with auto-redirect to login
 
 ### Local Storage & Database
 - **react-native-sqlite-storage** (v6.0.1) - SQLite database with offline-first capabilities
@@ -185,6 +186,11 @@ NoteIt/
 │   │   │   ├── DatabaseSchema.ts # Complete SQLite schema with sync tracking
 │   │   │   └── DatabaseInit.ts   # Database initialization and management
 │   │   ├── api/                  # HTTP client and API communication
+│   │   │   ├── config/           # API configuration (base URL, timeout)
+│   │   │   ├── endpoints/        # API endpoint URL definitions
+│   │   │   ├── requests/         # API calling functions
+│   │   │   ├── hooks/            # API utility hooks (useApi)
+│   │   │   └── interceptor/      # Request/response interceptors
 │   │   ├── validation/           # Infrastructure-level validation
 │   │   └── utils/                # Infrastructure utilities
 │   │
@@ -234,6 +240,7 @@ NoteIt/
 - **Dependencies**: Domain and Application layers
 - **Folders**: storage, api, validation, utils
 - **Database**: Complete SQLite implementation with offline-first sync capabilities
+- **API Architecture**: Organized HTTP client with interceptors, config, and request handlers
 
 #### **4. Presentation Layer** (`src/presentation/`)
 - **Purpose**: User interface and user interaction
@@ -269,6 +276,24 @@ NoteIt/
 - **Conflict Handling**: Automatic conflict detection with user resolution options
 - **Retry Logic**: Failed sync operations are automatically retried
 - **Performance Optimized**: Indexed database with efficient queries
+
+## 🌐 API & Network Features
+
+### **HTTP Client Architecture**
+- **Centralized Configuration**: Base URL and timeout settings in config
+- **Organized Structure**: Separated endpoints, requests, and interceptors
+- **Type-Safe Requests**: TypeScript interfaces for all API calls
+
+### **Authentication & Session Management**
+- **Automatic 401 Detection**: Interceptor catches expired sessions
+- **User-Friendly Alerts**: "Login session expires. To Sync data please login again."
+- **Seamless Redirect**: Auto-navigation to login screen on session expiry
+- **Bearer Token Support**: Automatic token handling in request headers
+
+### **Request/Response Handling**
+- **Error Interceptors**: Global error handling for consistent UX
+- **Request Configuration**: Flexible parameter and header management
+- **Response Processing**: Standardized data extraction and error handling
 
 ## 🧭 Navigation & Screen Architecture
 

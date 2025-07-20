@@ -5,7 +5,7 @@ import { StackNavigatorParamList } from '../navigation/types/StackNavigator';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { AppContext } from '../../application/context/AppContext';
 import { GlobalStyles } from '../styles/GlobalStyles';
-import { ThemeType } from '../../domain/types/Theme/theme';
+import { ThemeType } from '../../domain/types/theme/theme';
 
 const LoginScreen = () => {
     const navigation = useNavigation<StackNavigationProp<StackNavigatorParamList>>();

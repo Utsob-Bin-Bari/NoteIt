@@ -81,3 +81,8 @@
 * Types are added to include typesafety to our api calls. 
 * DatabaseUsageGuide.md is created to help understand and implement CURD operation on local database.
 
+
+# Commit 9: All Api Conifuration & Error Handling 
+* All api request is implemnted properly with type safety
+* Interceptor is used if Access Token expires it will take to login page
+* Config.js is added to keep the base url and default settings like timeout

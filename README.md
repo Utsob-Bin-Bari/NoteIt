@@ -1,6 +1,6 @@
 # NoteIt - React Native App
 
-A React Native application built with TypeScript for note-taking functionality with offline-first capabilities and conflict resolution.
+A React Native application built with TypeScript for note-taking functionality with **offline-first capabilities**, SQLite database storage, and automated conflict resolution.
 
 ## 📋 Prerequisites
 
@@ -121,6 +121,7 @@ yarn open
 - **Platforms**: iOS, Android
 - **Package Manager**: Yarn
 - **Architecture**: Clean Architecture with Layered Design
+- **Database**: SQLite with offline-first sync capabilities
 
 ## 📦 Core Dependencies
 
@@ -144,8 +145,11 @@ yarn open
 - **axios** (v1.10.0) - HTTP client for API requests
 - **@react-native-community/netinfo** (v11.4.1) - Network connectivity monitoring
 
-### Local Storage & Data Persistence
-- **react-native-sqlite-storage** (v6.0.1) - Direct SQLite database access
+### Local Storage & Database
+- **react-native-sqlite-storage** (v6.0.1) - SQLite database with offline-first capabilities
+- **Complete Database Schema** - User sessions, notes, sharing, bookmarks, and sync queue management
+- **Automatic Sync Queue** - Handles offline operations and syncs when online
+- **Conflict Resolution** - Built-in conflict detection and resolution mechanisms
 
 ### Conflict Resolution & Data Synchronization
 - **diff-match-patch** (v1.0.5) - Google's algorithm for text comparison and merging
@@ -164,7 +168,10 @@ NoteIt/
 │   │   ├── validators/           # Domain-specific validation rules
 │   │   ├── data/                 # Domain data models and interfaces
 │   │   └── types/                # TypeScript type definitions
-│   │       └── Theme.ts          # Theme-related type definitions
+│   │       ├── Auth/             # Authentication request/response types
+│   │       ├── Notes/            # Note-related API types
+│   │       ├── Bookmarks/        # Bookmark operation types
+│   │       └── Theme/            # Theme-related type definitions
 │   │
 │   ├── application/              # Application logic layer (middle)
 │   │   ├── store/                # Redux store configuration
@@ -175,6 +182,8 @@ NoteIt/
 │   │
 │   ├── infrastructure/           # External concerns layer
 │   │   ├── storage/              # Database and local storage
+│   │   │   ├── DatabaseSchema.ts # Complete SQLite schema with sync tracking
+│   │   │   └── DatabaseInit.ts   # Database initialization and management
 │   │   ├── api/                  # HTTP client and API communication
 │   │   ├── validation/           # Infrastructure-level validation
 │   │   └── utils/                # Infrastructure utilities
@@ -213,6 +222,7 @@ NoteIt/
 - **Purpose**: Contains business logic, entities, and core domain rules
 - **Dependencies**: No external dependencies
 - **Folders**: entities, validators, data, types
+- **API Types**: Complete TypeScript definitions for all API requests and responses
 
 #### **2. Application Layer** (`src/application/`)
 - **Purpose**: Orchestrates business logic and manages application state
@@ -223,6 +233,7 @@ NoteIt/
 - **Purpose**: Handles external concerns (databases, APIs, file systems)
 - **Dependencies**: Domain and Application layers
 - **Folders**: storage, api, validation, utils
+- **Database**: Complete SQLite implementation with offline-first sync capabilities
 
 #### **4. Presentation Layer** (`src/presentation/`)
 - **Purpose**: User interface and user interaction
@@ -236,6 +247,28 @@ NoteIt/
 - **✅ Maintainability**: Clear boundaries make code easier to maintain
 - **✅ Scalability**: Easy to add new features without affecting existing code
 - **✅ Dependency Rule**: Inner layers don't depend on outer layers
+- **✅ Offline-First**: Complete offline functionality with automatic sync
+
+## 💾 Database Features
+
+### **Offline-First Architecture**
+- **Complete Offline Functionality**: All CRUD operations work without internet
+- **Automatic Sync Queue**: Operations are queued and synced when online
+- **Conflict Resolution**: Built-in conflict detection and resolution
+- **Data Persistence**: SQLite database with proper schema design
+
+### **Database Tables**
+- **User Session**: Current user authentication and tokens
+- **Notes**: Main notes with sharing and bookmark support
+- **Users**: Cached user data for sharing functionality
+- **Sync Queue**: Pending operations for online synchronization
+- **App Settings**: Application configuration and sync metadata
+
+### **Sync Capabilities**
+- **Smart Sync**: Only syncs changed data
+- **Conflict Handling**: Automatic conflict detection with user resolution options
+- **Retry Logic**: Failed sync operations are automatically retried
+- **Performance Optimized**: Indexed database with efficient queries
 
 ## 🧭 Navigation & Screen Architecture
 
@@ -266,12 +299,12 @@ SignUp Screen (No Header)
 - **HomeScreen**: Main dashboard displaying user's notes
   - **Header**: Visible with navigation title
   - **Navigation**: Routes to Note screen for editing
-  - **Features**: Notes list, search functionality, add new note
+  - **Features**: Notes list, search functionality, add new note, offline support
 
 - **NoteScreen**: Individual note editing and viewing
   - **Header**: Visible with back navigation
   - **Navigation**: Routes back to Home screen
-  - **Features**: Rich text editing, save functionality, conflict resolution
+  - **Features**: Rich text editing, save functionality, conflict resolution, offline editing
 
 ### **Navigation Features**
 
@@ -317,7 +350,25 @@ SignUp Screen (No Header)
 3. **Android build issues**: Run `yarn clean-android` to clean build
 4. **Dependency issues**: Delete `node_modules` and `yarn.lock`, then run `yarn install`
 5. **Navigation issues**: Ensure `react-native-gesture-handler` is imported at the top of your entry file
-6. **SQLite issues**: Verify native linking with `yarn pod-install` for iOS
+
+### SQLite Database Issues
+
+6. **SQLite iOS issues**: 
+   - Run `cd ios && pod install && cd ..` to ensure proper linking
+   - Check that SQLite pod is properly added to Podfile
+7. **SQLite Android issues**: 
+   - SQLite should work automatically via autolinking
+   - Clean and rebuild if database operations fail
+8. **Database initialization errors**: 
+   - Check device storage space
+   - Verify database permissions
+   - Check console logs for specific SQLite errors
+9. **Sync conflicts**: 
+   - App handles conflicts automatically
+   - Check network connectivity for sync issues
+10. **Configuration warnings**: 
+    - SQLite configuration warnings are cosmetic only
+    - Functionality remains unaffected
 
 ### Environment Setup Issues
 
@@ -332,6 +383,7 @@ If you encounter environment setup issues, refer to the official React Native do
 - [Redux Toolkit](https://redux-toolkit.js.org/introduction/getting-started)
 - [Clean Architecture](https://blog.cleancoder.com/uncle-bob/2012/08/13/the-clean-architecture.html)
 - [React Native SVG](https://github.com/react-native-svg/react-native-svg)
+- [SQLite Storage](https://github.com/andpor/react-native-sqlite-storage)
 
 ## 🤝 Contributing
 

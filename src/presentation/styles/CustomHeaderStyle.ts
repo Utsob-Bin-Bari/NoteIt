@@ -1,5 +1,5 @@
 import { getColors } from '../constants/Colors';
-import { ThemeType } from '../../domain/types/Theme';
+import { ThemeType } from '../../domain/types/Theme/theme';
 
 export const getCustomHeaderStyle = (theme: ThemeType) => ({
   backgroundColor: getColors(theme).background,

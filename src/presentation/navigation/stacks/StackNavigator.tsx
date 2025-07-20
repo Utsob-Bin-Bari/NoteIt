@@ -4,7 +4,7 @@ import HomeScreen from '../../screens/HomeScreen';
 import NoteScreen from '../../screens/NoteScreen';
 import SignUpScreen from '../../screens/SignUpScreen';
 import { StackNavigatorParamList } from '../types/StackNavigator';
-import { ThemeType } from '../../../domain/types/Theme';
+import { ThemeType } from '../../../domain/types/Theme/theme';
 import { useContext } from 'react';
 import { AppContext } from '../../../application/context/AppContext';
 import { getHeaderOptions } from '../../styles/CustomHeaderStyle';

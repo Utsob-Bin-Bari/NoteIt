@@ -75,3 +75,9 @@
 * enableScreens() implemented which I forgot to implemented during navigation implementation.
 * Removed the back text from ios. 
 * Added border bottom for dark-light consitancy.
+
+# Commit 8: Create Database & Implement TypeSafety of Api Calls
+* Generalised Database is created using the API documentation and primary concept of keeping the local database identical to the backend database. It is initated with AI and will be updated manually on each functionality implementation.
+* Types are added to include typesafety to our api calls. 
+* DatabaseUsageGuide.md is created to help understand and implement CURD operation on local database.
+

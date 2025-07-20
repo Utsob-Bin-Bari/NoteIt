@@ -2,14 +2,18 @@ import StackNavigator from './src/presentation/navigation/stacks/StackNavigator'
 import { NavigationContainer } from '@react-navigation/native';
 import { StatusBar } from 'react-native';
 import { AppProvider, AppContext } from './src/application/context/AppContext';
-import { useContext } from 'react';
+import { useContext, useEffect } from 'react';
 import { getColors } from './src/presentation/constants/Colors';
-import { ThemeType } from './src/domain/types/Theme';
+import { ThemeType } from './src/domain/types/Theme/theme';
 import { enableScreens } from 'react-native-screens';
+import { startSQLiteConnection } from './src/infrastructure/storage/SQLiteStart';
 
 enableScreens();
 
 const AppContent = () => {
+  useEffect(() => {
+    startSQLiteConnection();
+  }, []);
   const { theme } = useContext(AppContext) as { theme: ThemeType };
   return (
     <NavigationContainer>

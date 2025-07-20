@@ -5,7 +5,7 @@ import { useNavigation } from '@react-navigation/native';
 import { StackNavigatorParamList } from '../navigation/types/StackNavigator';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { AppContext } from '../../application/context/AppContext';
-import { ThemeType } from '../../domain/types/Theme';
+import { ThemeType } from '../../domain/types/Theme/theme';
 
 const SignUpScreen = () => {
     const { theme } = useContext(AppContext) as { theme: ThemeType };

@@ -3,6 +3,7 @@ import { useDispatch } from 'react-redux';
 import { checkExistingUserSession } from '../../application/services/auth/loginService';
 import { setUserInfo } from '../../application/store/action/auth/setUserInfo';
 import { startSQLiteConnection } from '../../infrastructure/storage/SQLiteStart';
+import { RecoveryService } from '../../application/services/RecoveryService';
 
 export const useAppInitialization = () => {
   const dispatch = useDispatch();
@@ -10,6 +11,8 @@ export const useAppInitialization = () => {
   const [isInitializing, setIsInitializing] = useState(true);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [initializationError, setInitializationError] = useState<string>('');
+  const [needsRecovery, setNeedsRecovery] = useState(false);
+  const [recoveryReason, setRecoveryReason] = useState<string>('');
 
   useEffect(() => {
     initializeApp();
@@ -18,6 +21,7 @@ export const useAppInitialization = () => {
   const initializeApp = async () => {
     setIsInitializing(true);
     setInitializationError('');
+    setNeedsRecovery(false);
     
     try {
       // Step 1: Initialize SQLite database
@@ -33,6 +37,15 @@ export const useAppInitialization = () => {
       if (sessionResult.success && sessionResult.data) {
         // Step 3: Auto-login - populate Redux with existing session
         dispatch(setUserInfo(sessionResult.data));
+        
+        // Step 4: Check if recovery is needed for this user
+        const recoveryCheck = await RecoveryService.detectRecoveryNeed(sessionResult.data.accessToken);
+        
+        if (recoveryCheck.needsRecovery && recoveryCheck.canRecover) {
+          setNeedsRecovery(true);
+          setRecoveryReason(recoveryCheck.reason);
+        }
+        
         setIsLoggedIn(true);
       } else {
         // No existing session or invalid session
@@ -55,6 +68,8 @@ export const useAppInitialization = () => {
     isInitializing,
     isLoggedIn,
     initializationError,
+    needsRecovery,
+    recoveryReason,
     retryInitialization,
   };
 }; 

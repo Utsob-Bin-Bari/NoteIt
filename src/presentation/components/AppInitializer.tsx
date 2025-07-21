@@ -7,6 +7,7 @@ import { getColors } from '../constants/Colors';
 import { useAppInitialization } from '../hooks/useAppInitialization';
 import CustomButton from './CustomButton';
 import StackNavigator from '../navigation/stacks/StackNavigator';
+import RecoveryScreen from './RecoveryScreen';
 
 const AppInitializer = () => {
   const { theme } = useContext(AppContext) as { theme: ThemeType };
@@ -16,6 +17,8 @@ const AppInitializer = () => {
     isInitializing,
     isLoggedIn,
     initializationError,
+    needsRecovery,
+    recoveryReason,
     retryInitialization,
   } = useAppInitialization();
 
@@ -53,6 +56,23 @@ const AppInitializer = () => {
           />
         </View>
       </View>
+    );
+  }
+
+  // Show recovery screen if needed
+  if (needsRecovery && isLoggedIn) {
+    return (
+      <RecoveryScreen
+        reason={recoveryReason}
+        onRecoveryComplete={() => {
+          // Recovery completed, refresh app
+          retryInitialization();
+        }}
+        onSkipRecovery={() => {
+          // User chose to skip recovery, continue to app
+          retryInitialization();
+        }}
+      />
     );
   }
 

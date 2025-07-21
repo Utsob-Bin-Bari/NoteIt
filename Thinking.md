@@ -103,3 +103,17 @@
 * Make decision about how the whole architecture will work. On normal mode local store will be the source of truth and backend will replicate local store. On recovery it will be opposite. UI will be fetch from redux.
 * Add Login Functionality with including storing user info in local store and auto Login.
 
+# Commit 13: Implement Complete Data Recovery System
+* Create RecoveryService following layered architecture with functional service pattern.
+* Implement comprehensive recovery detection for database corruption, uninstall/reinstall scenarios.
+* Add complete data recovery covering all backend data types:
+  - User's own notes via fetchAllNotes()
+  - Notes shared with user via getUserSharedNotes() 
+  - Notes user bookmarked via fetchAllBookmarkedNotes()
+  - User profile data via getUserData()
+* Create useRecovery hook for recovery state management with progress tracking.
+* Build RecoveryScreen component with visual progress indicators and detailed recovery results.
+* Integrate recovery detection into app initialization flow.
+* Support graceful recovery with user choice (restore or skip).
+* Maintain offline-first architecture where SQLite remains source of truth post-recovery.
+

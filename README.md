@@ -211,6 +211,7 @@ NoteIt/
 │       ├── components/           # Reusable UI components
 │       │   ├── CustomTextInput.tsx # Theme-aware text input with password visibility
 │       │   ├── CustomButton.tsx  # Configurable button component
+│       │   ├── RecoveryScreen.tsx # Data recovery interface with progress indicators
 │       │   └── icons/            # Custom SVG icon components
 │       │       ├── EyeIcon.tsx   # Password visibility (show)
 │       │       ├── EyeOffIcon.tsx # Password visibility (hide)
@@ -227,6 +228,7 @@ NoteIt/
 │       ├── hooks/                # Custom React hooks
 │       │   ├── useLogin.ts       # Login form state and validation hook
 │       │   ├── useSignup.ts      # Signup form state and validation hook
+│       │   ├── useRecovery.ts    # Data recovery state management hook
 │       │   └── useNetworkStatus.ts # Network connectivity status hook
 │       ├── styles/               # Styling and theming
 │       │   ├── GlobalStyles.ts   # Global application styles
@@ -257,6 +259,7 @@ NoteIt/
 - **Folders**: store, services, context, utils
 - **Redux Store**: Complete store configuration with actions, reducers, and state management
 - **Authentication Services**: Login, signup, and session management business logic
+- **Recovery Services**: Complete data recovery system with backend synchronization
 - **Data Flow Architecture**: Local SQLite as source of truth, Redux for UI state management
 - **Auto-Login Logic**: Session restoration and automatic authentication on app startup
 
@@ -336,6 +339,18 @@ NoteIt/
 - **Retry Logic** - Failed sync operations are automatically retried
 - **Performance Optimized** - Indexed database with efficient queries
 
+### **Data Recovery System**
+- **Automatic Detection** - Detects database corruption, uninstall/reinstall scenarios
+- **Complete Data Recovery** - Restores all data types from backend server
+  - User's own notes and content
+  - Notes shared with the user by others
+  - Notes the user has bookmarked
+  - User profile and session data
+- **Recovery UI** - Visual progress indicators with step-by-step restoration
+- **User Control** - Option to restore data or skip recovery process
+- **Graceful Handling** - Maintains app functionality even with partial recovery failures
+- **Access Token Required** - Recovery only available for authenticated users
+
 ## 🌐 API & Network Features
 
 ### **HTTP Client Architecture**
@@ -370,10 +385,12 @@ NoteIt/
 The app uses a **Stack Navigator** with the following screen flow:
 
 ```
-Login Screen (No Header) → Home Screen → Note Screen
+Login Screen (No Header) → [Recovery Screen] → Home Screen → Note Screen
      ↓
 SignUp Screen (No Header)
 ```
+
+**Note**: Recovery Screen appears automatically when data recovery is needed after login.
 
 ### **Screen Details**
 

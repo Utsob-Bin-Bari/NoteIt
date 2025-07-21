@@ -33,6 +33,7 @@ const StackNavigator = ({ isLoggedIn = false }: StackNavigatorProps) => {
                 component={HomeScreen} 
                 options={({ navigation }) => ({
                     ...headerOptions,
+                    title: 'NoteIt',
                     headerLeft: () => null, // Remove back button
                     gestureEnabled: false, // Disable back gesture
                 })}

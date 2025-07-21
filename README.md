@@ -134,8 +134,12 @@ yarn open
 - **@react-native-masked-view/masked-view** (v0.3.2) - UI masking for transitions
 
 ### State Management & Data Flow
-- **@reduxjs/toolkit** (v2.8.2) - Modern Redux with simplified setup
-- **react-redux** (v9.2.0) - React bindings for Redux
+- **@reduxjs/toolkit** (v2.8.2) - Modern Redux with simplified setup and best practices
+- **react-redux** (v9.2.0) - React bindings for Redux state management
+- **Centralized Store Configuration** - Complete Redux store setup with actions and reducers
+- **Authentication State Management** - User session and login state handled through Redux
+- **Offline-First Architecture** - Local SQLite as primary source of truth with Redux for UI state
+- **Auto-Login Implementation** - Automatic session restoration from local storage on app startup
 
 ### Performance & UI Components
 - **@shopify/flash-list** (v1.8.3) - High-performance list component
@@ -251,6 +255,10 @@ NoteIt/
 - **Purpose**: Orchestrates business logic and manages application state
 - **Dependencies**: Domain layer only
 - **Folders**: store, services, context, utils
+- **Redux Store**: Complete store configuration with actions, reducers, and state management
+- **Authentication Services**: Login, signup, and session management business logic
+- **Data Flow Architecture**: Local SQLite as source of truth, Redux for UI state management
+- **Auto-Login Logic**: Session restoration and automatic authentication on app startup
 
 #### **3. Infrastructure Layer** (`src/infrastructure/`)
 - **Purpose**: Handles external concerns (databases, APIs, file systems)
@@ -285,13 +293,18 @@ NoteIt/
   - **Theme-Aware Colors**: All icons adapt to current theme with proper contrast
 
 ### **Authentication Features**
-- **Form Validation**: Real-time email and password validation
-- **Password Security**: Secure text entry with SVG eye icon visibility toggle
-- **Error Handling**: User-friendly error messages and loading states
-- **Network Status**: Real-time connectivity indicators with blue/grey color coding
-- **Theme Toggle**: Sun/Moon SVG icons for instant light/dark mode switching
-- **Visual Feedback**: All icons provide immediate visual status feedback
-- **Layered Architecture**: Separation of UI, business logic, and data layers
+- **Complete Login Flow** - Full authentication implementation with backend integration
+- **Redux Integration** - User authentication state managed through Redux store
+- **Local Storage Persistence** - User session stored in SQLite for offline access
+- **Auto-Login Capability** - Automatic login on app startup if valid session exists
+- **Form Validation** - Real-time email and password validation with field-specific errors
+- **Password Security** - Secure text entry with SVG eye icon visibility toggle
+- **Error Handling** - User-friendly error messages and loading states
+- **Session Management** - Token-based authentication with automatic session restoration
+- **Network Status** - Real-time connectivity indicators with blue/grey color coding
+- **Theme Toggle** - Sun/Moon SVG icons for instant light/dark mode switching
+- **Visual Feedback** - All icons provide immediate visual status feedback
+- **Layered Architecture** - Separation of UI, business logic, and data layers
 
 ### **Screen Components**
 - **LoginScreen**: Clean authentication with email/password
@@ -302,23 +315,26 @@ NoteIt/
 ## 💾 Database Features
 
 ### **Offline-First Architecture**
-- **Complete Offline Functionality**: All CRUD operations work without internet
-- **Automatic Sync Queue**: Operations are queued and synced when online
-- **Conflict Resolution**: Built-in conflict detection and resolution
-- **Data Persistence**: SQLite database with proper schema design
+- **Complete Offline Functionality** - All CRUD operations work without internet
+- **Automatic Sync Queue** - Operations are queued and synced when online
+- **Authentication Storage** - User sessions and tokens stored locally in SQLite
+- **Session Persistence** - Login state maintained across app restarts
+- **Conflict Resolution** - Built-in conflict detection and resolution
+- **Data Persistence** - SQLite database with proper schema design
 
 ### **Database Tables**
-- **User Session**: Current user authentication and tokens
-- **Notes**: Main notes with sharing and bookmark support
-- **Users**: Cached user data for sharing functionality
-- **Sync Queue**: Pending operations for online synchronization
-- **App Settings**: Application configuration and sync metadata
+- **User Session** - Current user authentication tokens and session data
+- **Notes** - Main notes with sharing and bookmark support
+- **Users** - Cached user data for sharing functionality
+- **Sync Queue** - Pending operations for online synchronization
+- **App Settings** - Application configuration and sync metadata
 
 ### **Sync Capabilities**
-- **Smart Sync**: Only syncs changed data
-- **Conflict Handling**: Automatic conflict detection with user resolution options
-- **Retry Logic**: Failed sync operations are automatically retried
-- **Performance Optimized**: Indexed database with efficient queries
+- **Smart Sync** - Only syncs changed data
+- **Session Restoration** - Automatic login state recovery on app startup
+- **Conflict Handling** - Automatic conflict detection with user resolution options
+- **Retry Logic** - Failed sync operations are automatically retried
+- **Performance Optimized** - Indexed database with efficient queries
 
 ## 🌐 API & Network Features
 

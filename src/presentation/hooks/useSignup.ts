@@ -1,42 +1,80 @@
 import { useState } from 'react';
-import { Alert } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
+import { useDispatch } from 'react-redux';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { StackNavigatorParamList } from '../navigation/types/StackNavigator';
-import { validateSignupForm, signupUser } from '../../application/services/auth';
+import { validateSignupForm, signupUser, storeNewUserSession } from '../../application/services/auth';
+import { setUserInfo } from '../../application/store/action/auth/setUserInfo';
 
 export const useSignup = () => {
   const navigation = useNavigation<StackNavigationProp<StackNavigatorParamList>>();
+  const dispatch = useDispatch();
+  
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [loading, setLoading] = useState(false);
-  const [errors, setErrors] = useState<string[]>([]);
+  const [fieldErrors, setFieldErrors] = useState({
+    name: [] as string[],
+    email: [] as string[],
+    password: [] as string[],
+    confirmPassword: [] as string[]
+  });
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [signupError, setSignupError] = useState<string>('');
 
   const handleSignup = async () => {
-    setErrors([]);
+    setFieldErrors({
+      name: [],
+      email: [],
+      password: [],
+      confirmPassword: []
+    });
+    setSignupError('');
     
+    // Validate form inputs
     const validation = validateSignupForm(email, password, confirmPassword, name);
     if (!validation.isValid) {
-      setErrors(validation.errors);
+      setFieldErrors(validation.fieldErrors);
       return;
     }
 
     setLoading(true);
+    
     try {
+      // Step 1: Backend request
       const result = await signupUser({ name, email, password });
       
-      if (result.success) {
-        // TODO: Store token and user data
-        navigation.navigate('Home');
+      if (result.success && result.data) {
+        const { user, token } = result.data;
+        
+        // Step 2: Update Redux store
+        const userInfo = {
+          id: user.id,
+          email: user.email,
+          name: user.name,
+          accessToken: token
+        };
+        
+        dispatch(setUserInfo(userInfo));
+        
+        // Step 3: Store in SQLite local storage
+        const storageResult = await storeNewUserSession(userInfo);
+        
+        if (storageResult.success) {
+          navigation.navigate('Home');
+        } else {
+          // Even if SQLite fails, we've signed up successfully
+          navigation.navigate('Home');
+        }
       } else {
-        Alert.alert('Signup Failed', result.error || 'Please try again');
+        // Step 4: Show error message below signup button
+        setSignupError(result.error || 'Signup failed. Please try again.');
       }
     } catch (error) {
-      Alert.alert('Error', 'Something went wrong. Please try again.');
+      setSignupError('Something went wrong. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -56,7 +94,8 @@ export const useSignup = () => {
     confirmPassword,
     setConfirmPassword,
     loading,
-    errors,
+    fieldErrors,
+    signupError,
     handleSignup,
     navigateToLogin,
     showPassword,

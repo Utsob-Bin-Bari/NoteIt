@@ -1,39 +1,73 @@
 import { useState } from 'react';
-import { Alert } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
+import { useDispatch } from 'react-redux';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { StackNavigatorParamList } from '../navigation/types/StackNavigator';
-import { validateLoginForm, loginUser } from '../../application/services/auth';
+import { validateLoginForm, loginUser, storeUserSession } from '../../application/services/auth';
+import { setUserInfo } from '../../application/store/action/auth/setUserInfo';
 
 export const useLogin = () => {
   const navigation = useNavigation<StackNavigationProp<StackNavigatorParamList>>();
+  const dispatch = useDispatch();
+  
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
-  const [errors, setErrors] = useState<string[]>([]);
+  const [fieldErrors, setFieldErrors] = useState({
+    email: [] as string[],
+    password: [] as string[]
+  });
   const [showPassword, setShowPassword] = useState(false);
+  const [loginError, setLoginError] = useState<string>('');
 
   const handleLogin = async () => {
-    setErrors([]);
+    setFieldErrors({
+      email: [],
+      password: []
+    });
+    setLoginError('');
     
+    // Validate form inputs
     const validation = validateLoginForm(email, password);
     if (!validation.isValid) {
-      setErrors(validation.errors);
+      setFieldErrors(validation.fieldErrors);
       return;
     }
 
     setLoading(true);
+    
     try {
+      // Step 1: Backend request
       const result = await loginUser({ email, password });
       
-      if (result.success) {
-        // TODO: Store token and user data
-        navigation.navigate('Home');
+      if (result.success && result.data) {
+        const { user, token } = result.data;
+        
+        // Step 2: Update Redux store
+        const userInfo = {
+          id: user.id,
+          email: user.email,
+          name: user.name,
+          accessToken: token
+        };
+        
+        dispatch(setUserInfo(userInfo));
+        
+        // Step 3: Store in SQLite local storage
+        const storageResult = await storeUserSession(userInfo);
+        
+        if (storageResult.success) {
+          navigation.navigate('Home');
+        } else {
+          // Even if SQLite fails, we've logged in successfully
+          navigation.navigate('Home');
+        }
       } else {
-        Alert.alert('Login Failed', result.error || 'Please try again');
+        // Step 4: Show error message below login button
+        setLoginError(result.error || 'Login failed. Please try again.');
       }
     } catch (error) {
-      Alert.alert('Error', 'Something went wrong. Please try again.');
+      setLoginError('Something went wrong. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -49,7 +83,8 @@ export const useLogin = () => {
     password,
     setPassword,
     loading,
-    errors,
+    fieldErrors,
+    loginError,
     handleLogin,
     navigateToSignup,
     showPassword,

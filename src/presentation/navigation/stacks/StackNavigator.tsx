@@ -7,19 +7,36 @@ import { StackNavigatorParamList } from '../types/StackNavigator';
 import { ThemeType } from '../../../domain/types/theme/theme';
 import { useContext } from 'react';
 import { AppContext } from '../../../application/context/AppContext';
-import { getHeaderOptions } from '../../styles/CustomHeaderStyle';  
+import { getHeaderOptions } from '../../styles/CustomHeaderStyle';
 
 const Stack = createStackNavigator<StackNavigatorParamList>();
 
-const StackNavigator = () => {
+interface StackNavigatorProps {
+  isLoggedIn?: boolean;
+}
+
+const StackNavigator = ({ isLoggedIn = false }: StackNavigatorProps) => {
     const { theme, toggleTheme } = useContext(AppContext) as { theme: ThemeType, toggleTheme: () => void };
     const headerOptions = getHeaderOptions(theme, toggleTheme);
     
+    // Determine initial route based on login status
+    const initialRouteName = isLoggedIn ? 'Home' : 'Login';
+    
+    console.log('StackNavigator initializing with route:', initialRouteName);
+    
     return (
-        <Stack.Navigator initialRouteName="Login">
+        <Stack.Navigator initialRouteName={initialRouteName}>
             <Stack.Screen name="Login" component={LoginScreen} options={{ headerShown: false }}/>
             <Stack.Screen name="SignUp" component={SignUpScreen} options={{ headerShown: false }}/>
-            <Stack.Screen name="Home" component={HomeScreen} options={headerOptions} />
+            <Stack.Screen 
+                name="Home" 
+                component={HomeScreen} 
+                options={({ navigation }) => ({
+                    ...headerOptions,
+                    headerLeft: () => null, // Remove back button
+                    gestureEnabled: false, // Disable back gesture
+                })}
+            />
             <Stack.Screen name="Note" component={NoteScreen} options={headerOptions} />
         </Stack.Navigator>
     );

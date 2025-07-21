@@ -92,8 +92,14 @@
 * Make Log In Page with visibility toggle and custom component.
 * Keep dark-light mode consistant. 
 
-# Commit 11: Create and Implement Custom Dark-Light Icons and Network Availble Icons.
+# Commit 11: Create and Implement Custom Dark-Light Icons and Network Availble Icons
 * Create Dark-Light icons using react-native-svgs.
 * Create Network On-Off icons usering react-native-svgs.
 * Implement @react-native-community/netinfo to check netword connectivity.
+
+# Commit 12: Configure Redux store and Implement Login functionality 
+* Create Action, Reducer and store with redux.
+* Provide it to whole application.
+* Make decision about how the whole architecture will work. On normal mode local store will be the source of truth and backend will replicate local store. On recovery it will be opposite. UI will be fetch from redux.
+* Add Login Functionality with including storing user info in local store and auto Login.
 

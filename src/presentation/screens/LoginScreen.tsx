@@ -21,7 +21,8 @@ const LoginScreen = () => {
     password,
     setPassword,
     loading,
-    errors,
+    fieldErrors,
+    loginError,
     handleLogin,
     navigateToSignup,
     showPassword,
@@ -32,7 +33,8 @@ const LoginScreen = () => {
     <View style={GlobalStyles(theme).mainContainer}>
       <View style={[GlobalStyles(theme).container,{paddingTop:Platform.OS === 'android' ? 72 : 20}]}>
         <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{flex:1}}>
-        <ScrollView>
+        <ScrollView contentContainerStyle={{ alignItems: 'center', justifyContent: 'center' }}>
+          <View style={{ width: '90%' }}>
           <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
             <Text style={GlobalStyles(theme).titleText}>
               Login
@@ -63,12 +65,28 @@ const LoginScreen = () => {
             autoCapitalize="none"
             style={{width:'100%'}}
           />
+            
+            {/* Display email-specific errors */}
+            {fieldErrors.email.length > 0 && (
+              <View style={{ marginBottom: 10 }}>
+                {fieldErrors.email.map((error, index) => (
+                  <Text key={index} style={[GlobalStyles(theme).errorText, { fontSize: 12, marginBottom: 3 }]}>
+                    {error}
+                  </Text>
+                ))}
+              </View>
+            )}
+
           <View style={{ position: 'relative' }}>
             <CustomTextInput
               placeholder="Password"
               value={password}
               onChangeText={setPassword}
               secureTextEntry={!showPassword}
+                autoComplete="off"
+                textContentType="none"
+                passwordRules=""
+                autoCapitalize="none"
             />
             <TouchableOpacity 
               style={{ position: 'absolute', right: 16, top: 18 }}
@@ -78,17 +96,38 @@ const LoginScreen = () => {
             </TouchableOpacity>
           </View>
 
+            {/* Display password-specific errors */}
+            {fieldErrors.password.length > 0 && (
+              <View style={{ marginBottom: 10 }}>
+                {fieldErrors.password.map((error, index) => (
+                  <Text key={index} style={[GlobalStyles(theme).errorText, { fontSize: 12, marginBottom: 3 }]}>
+                    {error}
+                  </Text>
+                ))}
+              </View>
+            )}
+
           <CustomButton
             text={loading ? 'Logging in...' : 'Login'}
             onPress={handleLogin}
             disabled={loading}
           />
 
+            {/* Display login error below the button */}
+            {loginError ? (
+              <View style={{ marginTop: 10, marginBottom: 10 }}>
+                <Text style={[GlobalStyles(theme).errorText, { fontSize: 14, textAlign: 'center' }]}>
+                  {loginError}
+                </Text>
+              </View>
+            ) : null}
+
           <View style={[GlobalStyles(theme).rowContainer,{marginBottom:10}]}>
           <Text style={GlobalStyles(theme).mediumText}>Don't have an account?</Text>
             <TouchableOpacity onPress={navigateToSignup}>
                 <Text style={GlobalStyles(theme).linkText}>Sign Up</Text>
             </TouchableOpacity>
+            </View>
           </View>
         </ScrollView>
         </KeyboardAvoidingView>

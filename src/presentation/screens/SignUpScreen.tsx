@@ -1,4 +1,4 @@
-import React, { useContext, useState } from 'react';
+import React, { useContext } from 'react';
 import { View, Text, ScrollView, Platform, TouchableOpacity, KeyboardAvoidingView} from 'react-native';
 import { AppContext } from '../../application/context/AppContext';
 import { GlobalStyles } from '../styles/GlobalStyles';
@@ -25,7 +25,8 @@ const SignUpScreen = () => {
     setPassword,
     confirmPassword,
     setConfirmPassword,
-    errors,
+    fieldErrors,
+    signupError,
     handleSignup,
     navigateToLogin,
     showPassword,
@@ -38,7 +39,8 @@ const SignUpScreen = () => {
     <View style={GlobalStyles(theme).mainContainer}>
       <View style={[GlobalStyles(theme).container,{paddingTop:Platform.OS === 'android' ? 72 : 20}]}>
         <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{flex:1}}>
-        <ScrollView showsVerticalScrollIndicator={false}>
+        <ScrollView contentContainerStyle={{ alignItems: 'center', justifyContent: 'center' }} showsVerticalScrollIndicator={false}>
+          <View style={{ width: '90%' }}>
         <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
           <Text style={GlobalStyles(theme).titleText}>
             Sign Up
@@ -60,12 +62,25 @@ const SignUpScreen = () => {
           </View>
         </View>
         <Text style={[GlobalStyles(theme).mediumText,{marginBottom:20,textAlign:'left'}]}>Welcome to <Text style={GlobalStyles(theme).primaryText}>NoteIt </Text>! Please enter your personal details to create an account.</Text>
+            
         <CustomTextInput
           placeholder="Full Name"
           value={name}
           onChangeText={setName}
           autoCapitalize="words"
         />
+
+            {/* Display name-specific errors */}
+            {fieldErrors.name.length > 0 && (
+              <View style={{ marginBottom: 10 }}>
+                {fieldErrors.name.map((error, index) => (
+                  <Text key={index} style={[GlobalStyles(theme).errorText, { fontSize: 12, marginBottom: 3 }]}>
+                    {error}
+                  </Text>
+                ))}
+              </View>
+            )}
+            
         <CustomTextInput
           placeholder="Email"
           value={email}
@@ -74,12 +89,27 @@ const SignUpScreen = () => {
           autoCapitalize="none"
         />
 
+            {/* Display email-specific errors */}
+            {fieldErrors.email.length > 0 && (
+              <View style={{ marginBottom: 10 }}>
+                {fieldErrors.email.map((error, index) => (
+                  <Text key={index} style={[GlobalStyles(theme).errorText, { fontSize: 12, marginBottom: 3 }]}>
+                    {error}
+                  </Text>
+                ))}
+              </View>
+            )}
+
         <View style={{ position: 'relative' }}>
           <CustomTextInput
             placeholder="Password"
             value={password}
             onChangeText={setPassword}
             secureTextEntry={!showPassword}
+                autoComplete="off"
+                textContentType="none"
+                passwordRules=""
+                autoCapitalize="none"
           />
           <TouchableOpacity 
             style={{ position: 'absolute', right: 16, top: 18 }}
@@ -89,12 +119,27 @@ const SignUpScreen = () => {
           </TouchableOpacity>
         </View>
 
+            {/* Display password-specific errors */}
+            {fieldErrors.password.length > 0 && (
+              <View style={{ marginBottom: 10 }}>
+                {fieldErrors.password.map((error, index) => (
+                  <Text key={index} style={[GlobalStyles(theme).errorText, { fontSize: 12, marginBottom: 3 }]}>
+                    {error}
+                  </Text>
+                ))}
+              </View>
+            )}
+
         <View style={{ position: 'relative' }}>
           <CustomTextInput
             placeholder="Confirm Password"
             value={confirmPassword}
             onChangeText={setConfirmPassword}
             secureTextEntry={!showConfirmPassword}
+                autoComplete="off"
+                textContentType="none"
+                passwordRules=""
+                autoCapitalize="none"
           />
           <TouchableOpacity 
             style={{ position: 'absolute', right: 16, top: 18 }}
@@ -104,10 +149,11 @@ const SignUpScreen = () => {
           </TouchableOpacity>
         </View>
 
-        {errors.length > 0 && (
-          <View style={{ marginBottom: 20 }}>
-            {errors.map((error, index) => (
-              <Text key={index} style={{ color: 'red', fontSize: 14, marginBottom: 5 }}>
+            {/* Display confirm password-specific errors */}
+            {fieldErrors.confirmPassword.length > 0 && (
+              <View style={{ marginBottom: 10 }}>
+                {fieldErrors.confirmPassword.map((error, index) => (
+                  <Text key={index} style={[GlobalStyles(theme).errorText, { fontSize: 12, marginBottom: 3 }]}>
                 {error}
               </Text>
             ))}
@@ -120,14 +166,22 @@ const SignUpScreen = () => {
           disabled={loading}
         />
 
+            {/* Display signup error below the button */}
+            {signupError ? (
+              <View style={{ marginTop: 10, marginBottom: 10 }}>
+                <Text style={[GlobalStyles(theme).errorText, { fontSize: 14, textAlign: 'center' }]}>
+                  {signupError}
+                </Text>
+              </View>
+            ) : null}
+
         <View style={[GlobalStyles(theme).rowContainer,{marginBottom:10}]}>
           <Text style={GlobalStyles(theme).mediumText}>Already have an account?</Text>
             <TouchableOpacity onPress={navigateToLogin}>
                 <Text style={GlobalStyles(theme).linkText}>Login</Text>
             </TouchableOpacity>
           </View>
-
-
+          </View>
         </ScrollView>
         </KeyboardAvoidingView>
       </View>

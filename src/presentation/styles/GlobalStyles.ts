@@ -46,5 +46,11 @@ export const GlobalStyles = (theme: ThemeType) => StyleSheet.create({
   rowContainer:{
     flexDirection:'row',
     justifyContent:'center',
+  },
+  errorText:{
+    color: getColors(theme).error,
+    fontSize: 14,
+    lineHeight: 18,
+    textAlign: 'left',
   }
 });

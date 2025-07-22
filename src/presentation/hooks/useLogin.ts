@@ -3,7 +3,8 @@ import { useNavigation } from '@react-navigation/native';
 import { useDispatch } from 'react-redux';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { StackNavigatorParamList } from '../navigation/types/StackNavigator';
-import { validateLoginForm, loginUser, storeUserSession } from '../../application/services/auth';
+import { validateLoginForm } from '../../domain/validators/loginValidator';
+import { loginUser, storeUserSession } from '../../application/services/auth';
 import { setUserInfo } from '../../application/store/action/auth/setUserInfo';
 
 export const useLogin = () => {
@@ -27,7 +28,6 @@ export const useLogin = () => {
     });
     setLoginError('');
     
-    // Validate form inputs
     const validation = validateLoginForm(email, password);
     if (!validation.isValid) {
       setFieldErrors(validation.fieldErrors);
@@ -37,13 +37,11 @@ export const useLogin = () => {
     setLoading(true);
     
     try {
-      // Step 1: Backend request
       const result = await loginUser({ email, password });
       
       if (result.success && result.data) {
         const { user, token } = result.data;
-        
-        // Step 2: Update Redux store
+
         const userInfo = {
           id: user.id,
           email: user.email,
@@ -52,8 +50,7 @@ export const useLogin = () => {
         };
         
         dispatch(setUserInfo(userInfo));
-        
-        // Step 3: Store in SQLite local storage
+
         const storageResult = await storeUserSession(userInfo);
         
         if (storageResult.success) {
@@ -63,7 +60,6 @@ export const useLogin = () => {
           navigation.navigate('Home');
         }
       } else {
-        // Step 4: Show error message below login button
         setLoginError(result.error || 'Login failed. Please try again.');
       }
     } catch (error) {

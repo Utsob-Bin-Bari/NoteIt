@@ -1,0 +1,7 @@
+// You can call deduplicateNotes from settings or create a cleanup button
+import { deduplicateNotes } from '../application/services/notes';
+
+const cleanupDuplicates = async () => {
+  const result = await deduplicateNotes(userId);
+  console.log(`Removed ${result.removed} duplicates, kept ${result.kept} notes`);
+};

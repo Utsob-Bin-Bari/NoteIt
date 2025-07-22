@@ -41,7 +41,6 @@ export const NetworkService = {
       const state = await NetInfo.fetch();
       return state.isInternetReachable ?? false;
     } catch (error) {
-      console.log('Error checking internet reachability:', error);
       return false;
     }
   }

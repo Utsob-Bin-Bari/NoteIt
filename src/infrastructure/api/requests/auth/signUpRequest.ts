@@ -11,7 +11,6 @@ export const signUpRequest = async({requestBody}:{requestBody:SignUpRequest}) =>
         });
         return response.data as SignUpResponse;
     }catch(error){
-        console.log(error);
         throw error;
     }
 }

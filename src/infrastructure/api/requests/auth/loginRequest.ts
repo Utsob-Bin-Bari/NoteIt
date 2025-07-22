@@ -11,7 +11,6 @@ export const loginRequest = async({requestBody}:{requestBody:LoginRequest}) => {
         });
         return response.data as LoginResponse;
     }catch(error){
-        console.log(error);
         throw error;
     }
 }

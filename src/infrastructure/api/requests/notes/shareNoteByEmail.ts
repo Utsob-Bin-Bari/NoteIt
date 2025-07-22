@@ -16,7 +16,6 @@ export const shareNoteByEmail = async({noteId, requestBody, accessToken}:{noteId
         });
         return response.data as ShareNoteResponse;
     }catch(error){
-        console.log(error);
         throw error;
     }
 }

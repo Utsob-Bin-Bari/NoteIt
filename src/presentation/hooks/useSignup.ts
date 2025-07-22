@@ -3,7 +3,9 @@ import { useNavigation } from '@react-navigation/native';
 import { useDispatch } from 'react-redux';
 import { StackNavigationProp } from '@react-navigation/stack';
 import { StackNavigatorParamList } from '../navigation/types/StackNavigator';
-import { validateSignupForm, signupUser, storeNewUserSession } from '../../application/services/auth';
+import { validateSignupForm } from '../../domain/validators/signupValidator';
+import { signupUser } from '../../application/services/auth/signup';
+import { storeUserSession } from '../../application/services/auth/login';
 import { setUserInfo } from '../../application/store/action/auth/setUserInfo';
 
 export const useSignup = () => {
@@ -33,8 +35,7 @@ export const useSignup = () => {
       confirmPassword: []
     });
     setSignupError('');
-    
-    // Validate form inputs
+
     const validation = validateSignupForm(email, password, confirmPassword, name);
     if (!validation.isValid) {
       setFieldErrors(validation.fieldErrors);
@@ -44,13 +45,11 @@ export const useSignup = () => {
     setLoading(true);
     
     try {
-      // Step 1: Backend request
       const result = await signupUser({ name, email, password });
       
       if (result.success && result.data) {
         const { user, token } = result.data;
         
-        // Step 2: Update Redux store
         const userInfo = {
           id: user.id,
           email: user.email,
@@ -60,17 +59,14 @@ export const useSignup = () => {
         
         dispatch(setUserInfo(userInfo));
         
-        // Step 3: Store in SQLite local storage
-        const storageResult = await storeNewUserSession(userInfo);
+        const storageResult = await storeUserSession(userInfo);
         
         if (storageResult.success) {
           navigation.navigate('Home');
         } else {
-          // Even if SQLite fails, we've signed up successfully
           navigation.navigate('Home');
         }
-      } else {
-        // Step 4: Show error message below signup button
+      } else {  
         setSignupError(result.error || 'Signup failed. Please try again.');
       }
     } catch (error) {

@@ -15,7 +15,6 @@ export const createNewNote = async({requestBody, accessToken}:{requestBody:Creat
         });
         return response.data as CreateNoteResponse;
     }catch(error){
-        console.log(error);
         throw error;
     }
 }

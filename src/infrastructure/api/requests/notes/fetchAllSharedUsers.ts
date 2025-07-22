@@ -14,7 +14,6 @@ export const fetchAllSharedUsers = async({noteId, accessToken}:{noteId:string, a
         });
         return response.data as GetSharedUsersResponse;
     }catch(error){
-        console.log(error);
         throw error;
     }
 }

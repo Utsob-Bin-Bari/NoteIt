@@ -14,7 +14,6 @@ export const createBookmark = async({noteId, accessToken}:{noteId:string, access
         });
         return response.data as BookmarkNoteResponse;
     }catch(error){
-        console.log(error);
         throw error;
     }
 }

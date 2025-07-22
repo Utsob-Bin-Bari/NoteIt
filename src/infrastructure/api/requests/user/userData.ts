@@ -13,7 +13,6 @@ export const getUserData = async({accessToken}:{accessToken:string}) => {
         });
         return response.data as GetMeResponse;
     }catch(error){
-        console.log(error);
         throw error;
     }
 }

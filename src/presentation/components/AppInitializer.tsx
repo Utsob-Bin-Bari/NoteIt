@@ -5,34 +5,29 @@ import { ThemeType } from '../../domain/types/theme/theme';
 import { GlobalStyles } from '../styles/GlobalStyles';
 import { getColors } from '../constants/Colors';
 import { useAppInitialization } from '../hooks/useAppInitialization';
-import CustomButton from './CustomButton';
 import StackNavigator from '../navigation/stacks/StackNavigator';
-import RecoveryScreen from './RecoveryScreen';
+import CustomButton from './CustomButton';
 
 const AppInitializer = () => {
   const { theme } = useContext(AppContext) as { theme: ThemeType };
   const colors = getColors(theme);
   
   const {
-    isInitializing,
-    isLoggedIn,
-    initializationError,
-    needsRecovery,
+    isInitialized,
+    isLoading,
+    error,
+    autoRecovery,
     recoveryReason,
-    retryInitialization,
   } = useAppInitialization();
 
   // Show loading screen during initialization
-  if (isInitializing) {
+  if (isLoading) {
     return (
       <View style={[GlobalStyles(theme).mainContainer, { justifyContent: 'center' }]}>
         <View style={{ alignItems: 'center' }}>
           <ActivityIndicator size="large" color={colors.primary} />
-          <Text style={[GlobalStyles(theme).text, { marginTop: 20, fontSize: 16 }]}>
-            Initializing NoteIt...
-          </Text>
-          <Text style={[GlobalStyles(theme).text, { marginTop: 8, fontSize: 14, opacity: 0.7 }]}>
-            Setting up database and checking for existing session
+          <Text style={[GlobalStyles(theme).text, { marginTop: 20, textAlign: 'center' }]}>
+            Initializing App...
           </Text>
         </View>
       </View>
@@ -40,44 +35,37 @@ const AppInitializer = () => {
   }
 
   // Show error screen if initialization failed
-  if (initializationError) {
+  if (error) {
     return (
       <View style={[GlobalStyles(theme).mainContainer, { justifyContent: 'center' }]}>
-        <View style={{ alignItems: 'center', width: '80%', alignSelf: 'center' }}>
-          <Text style={[GlobalStyles(theme).titleText, { marginBottom: 20 }]}>
+        <View style={{ alignItems: 'center', paddingHorizontal: 20 }}>
+          <Text style={[GlobalStyles(theme).text, { fontSize: 18, marginBottom: 10, textAlign: 'center' }]}>
             Initialization Failed
           </Text>
-          <Text style={[GlobalStyles(theme).errorText, { textAlign: 'center', marginBottom: 30 }]}>
-            {initializationError}
+          <Text style={[GlobalStyles(theme).text, { marginBottom: 20, textAlign: 'center' }]}>
+            {error}
           </Text>
           <CustomButton
             text="Retry"
-            onPress={retryInitialization}
+            onPress={() => {
+              // You can add retry logic here if needed
+            }}
           />
         </View>
       </View>
     );
   }
 
-  // Show recovery screen if needed
-  if (needsRecovery && isLoggedIn) {
-    return (
-      <RecoveryScreen
-        reason={recoveryReason}
-        onRecoveryComplete={() => {
-          // Recovery completed, refresh app
-          retryInitialization();
-        }}
-        onSkipRecovery={() => {
-          // User chose to skip recovery, continue to app
-          retryInitialization();
-        }}
-      />
-    );
-  }
-
-  // Initialization completed successfully - show main app
-  return <StackNavigator isLoggedIn={isLoggedIn} />;
+  // App is initialized, show the main stack navigator
+  return (
+    <StackNavigator 
+      isLoggedIn={isInitialized}
+      autoRecoveryNavigation={autoRecovery ? {
+        shouldNavigate: true,
+        reason: recoveryReason
+      } : null}
+    />
+  );
 };
 
 export default AppInitializer; 

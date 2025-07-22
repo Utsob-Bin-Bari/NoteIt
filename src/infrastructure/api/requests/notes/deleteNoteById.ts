@@ -12,9 +12,27 @@ export const deleteNoteById = async({noteId, accessToken}:{noteId:string, access
                 'Content-Type': 'application/json',
             },
         });
+
         return response.data as DeleteNoteResponse;
-    }catch(error){
-        console.log(error);
+    }catch(error: any){
+        console.error('❌ Delete note API error:', {
+            noteId,
+            endpoint: deleteNoteByIdEndpoint(noteId),
+            status: error.response?.status,
+            statusText: error.response?.statusText,
+            data: error.response?.data,
+            message: error.message,
+            fullError: error
+        });
+
+        // Enhance error message for debugging
+        if (error.response?.status === 404) {
+            const enhancedError = new Error(`Note not found on server (404): ${noteId}. Endpoint: ${deleteNoteByIdEndpoint(noteId)}`);
+            // Preserve the response object for proper error handling downstream
+            (enhancedError as any).response = error.response;
+            throw enhancedError;
+        }
+
         throw error;
     }
 }

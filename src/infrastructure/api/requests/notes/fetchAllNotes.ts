@@ -14,7 +14,6 @@ export const fetchAllNotes = async({accessToken}:{accessToken:string}) => {
         });
         return response.data as GetAllNotesResponse;
     }catch(error){
-        console.log(error);
         throw error;
     }
 }

@@ -14,7 +14,6 @@ export const fetchAllBookmarkedNotes = async({accessToken}:{accessToken:string})
         });
         return response.data as GetBookmarkedNotesResponse;
     }catch(error){
-        console.log(error);
         throw error;
     }
 }

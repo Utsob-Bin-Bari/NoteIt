@@ -14,7 +14,6 @@ export const fetchNoteById = async({noteId, accessToken}:{noteId:string, accessT
         });
         return response.data as GetNoteByIdResponse;
     }catch(error){
-        console.log(error);
         throw error;
     }
 }

@@ -5,9 +5,10 @@ import { StackNavigationProp } from '@react-navigation/stack';
 import { StackNavigatorParamList } from '../navigation/types/StackNavigator';
 import { RootState } from '../../domain/types/store/RootState';
 import { AuthState } from '../../domain/types/store/AuthState';
-import { fetchLocalUserSession } from '../../application/services/user/userService';
-import { logoutUser } from '../../application/services/auth/loginService';
+import { fetchLocalUserSession } from '../../application/services/user';
+import { logoutUser } from '../../application/services/auth';
 import { logOut } from '../../application/store/action/auth/logOut';
+import { setSelectedNoteId } from '../../application/store/action/notes/setSelectedNoteId';
 
 interface ExtendedUserSessionData extends AuthState {
   createdAt?: string;
@@ -19,16 +20,17 @@ export const useHome = () => {
   const navigation = useNavigation<StackNavigationProp<StackNavigatorParamList>>();
   const dispatch = useDispatch();
   
-  // Redux user data
   const reduxUserData = useSelector((state: RootState) => state.auth);
   
-  // Local state
   const [localUserData, setLocalUserData] = useState<ExtendedUserSessionData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string>('');
   const [loggingOut, setLoggingOut] = useState(false);
+  const [showBookmarks, setShowBookmarks] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [isFilterActive, setIsFilterActive] = useState(false);
 
-  // Fetch local user data on component mount
   useEffect(() => {
     loadLocalUserData();
   }, []);
@@ -56,17 +58,13 @@ export const useHome = () => {
     setLoggingOut(true);
     
     try {
-      // Step 1: Clear SQLite storage
       const result = await logoutUser();
       
-      // Step 2: Clear Redux store
       dispatch(logOut());
       
-      // Step 3: Clear local state
       setLocalUserData(null);
       setError('');
       
-      // Step 4: Navigate to login screen
       navigation.navigate('Login');
       
     } catch (error) {
@@ -76,31 +74,85 @@ export const useHome = () => {
     }
   };
 
-  const navigateToNote = () => {
+  const navigateToNote = (note?: any) => {
+    if (note) {
+      dispatch(setSelectedNoteId(note.id));
+      navigation.navigate('Note', { title: note.title, noteId: note.id });
+    } else {
+      dispatch(setSelectedNoteId(''));
+      navigation.navigate('Note');
+    }
+  };
+
+  const handleAddNote = () => {
+    dispatch(setSelectedNoteId(''));
     navigation.navigate('Note');
+  };
+
+  const handleToggleView = (isBookmarks: boolean) => {
+    setShowBookmarks(isBookmarks);
   };
 
   const refreshUserData = () => {
     loadLocalUserData();
   };
 
-  // Check if user is logged in (either Redux or local data exists)
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    try {
+      // Refresh user data
+      await loadLocalUserData();
+      // The individual components (AllNotesComponent and AllBookmarksComponent) 
+      // will handle their own data refresh through their internal RefreshControl
+    } catch (error) {
+      console.error('Error refreshing home data:', error);
+    } finally {
+      setRefreshing(false);
+    }
+  };
+
+  const handleSettings = () => {
+    navigation.navigate('Settings');
+  };
+
+  const handleSearchChange = (text: string) => {
+    setSearchQuery(text);
+  };
+
+  const clearSearch = () => {
+    setSearchQuery('');
+  };
+
+  const handleFilterToggle = () => {
+    setIsFilterActive(prev => !prev);
+    // Clear search when toggling filter
+    if (searchQuery) {
+      setSearchQuery('');
+    }
+  };
+
   const isLoggedIn = !!(reduxUserData?.id || localUserData?.id);
 
   return {
-    // User data
     reduxUserData,
     localUserData,
     isLoggedIn,
-    
-    // State
     loading,
     error,
     loggingOut,
-    
-    // Actions
+    showBookmarks,
+    refreshing,
+    searchQuery,
+    isFilterActive,
     navigateToNote,
+    handleAddNote,
+    handleToggleView,
     refreshUserData,
+    handleRefresh,
     handleLogout,
+    handleSettings,
+    handleSearchChange,
+    clearSearch,
+    handleFilterToggle,
   };
 }; 

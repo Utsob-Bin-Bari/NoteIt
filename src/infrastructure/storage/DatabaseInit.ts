@@ -28,8 +28,6 @@ export class DatabaseInit {
         location: 'default',
       });
 
-      console.log('✅ Database opened successfully');
-
       // Create all tables
       await this.createTables();
       
@@ -38,8 +36,6 @@ export class DatabaseInit {
 
       // Set initial app settings
       await this.setInitialSettings();
-
-      console.log('✅ Database initialization completed');
       return this.db;
 
     } catch (error) {
@@ -67,7 +63,6 @@ export class DatabaseInit {
     for (const createTableSQL of DATABASE_SCHEMA.CREATE_TABLES) {
       await this.db.executeSql(createTableSQL);
     }
-    console.log('✅ All tables created successfully');
   }
 
   /**
@@ -79,7 +74,6 @@ export class DatabaseInit {
     for (const createIndexSQL of DATABASE_SCHEMA.CREATE_INDEXES) {
       await this.db.executeSql(createIndexSQL);
     }
-    console.log('✅ All indexes created successfully');
   }
 
   /**
@@ -104,7 +98,6 @@ export class DatabaseInit {
         [key, value, currentTimestamp]
       );
     }
-    console.log('✅ Initial settings configured');
   }
 
   /**
@@ -124,7 +117,6 @@ export class DatabaseInit {
     for (const clearSQL of clearTables) {
       await this.db.executeSql(clearSQL);
     }
-    console.log('✅ All user data cleared');
   }
 
   /**
@@ -134,7 +126,6 @@ export class DatabaseInit {
     if (this.db) {
       await this.db.close();
       this.db = null;
-      console.log('✅ Database connection closed');
     }
   }
 
@@ -152,7 +143,6 @@ export class DatabaseInit {
       await this.db.executeSql('SELECT COUNT(*) FROM sync_queue');
       await this.db.executeSql('SELECT COUNT(*) FROM app_settings');
 
-      console.log('✅ Database health check passed');
       return true;
     } catch (error) {
       console.error('❌ Database health check failed:', error);
@@ -172,7 +162,7 @@ export class DatabaseInit {
     if (!this.db) throw new Error('Database not initialized');
 
     const [notesResult] = await this.db.executeSql(
-      'SELECT COUNT(*) as count FROM notes WHERE is_deleted = 0'
+      'SELECT COUNT(*) as count FROM notes'
     );
     const [usersResult] = await this.db.executeSql(
       'SELECT COUNT(*) as count FROM users'

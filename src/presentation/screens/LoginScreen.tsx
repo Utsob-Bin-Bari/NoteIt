@@ -33,8 +33,7 @@ const LoginScreen = () => {
     <View style={GlobalStyles(theme).mainContainer}>
       <View style={[GlobalStyles(theme).container,{paddingTop:Platform.OS === 'android' ? 72 : 20}]}>
         <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{flex:1}}>
-        <ScrollView contentContainerStyle={{ alignItems: 'center', justifyContent: 'center' }}>
-          <View style={{ width: '90%' }}>
+        <ScrollView showsVerticalScrollIndicator={false}>
           <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
             <Text style={GlobalStyles(theme).titleText}>
               Login
@@ -128,7 +127,6 @@ const LoginScreen = () => {
                 <Text style={GlobalStyles(theme).linkText}>Sign Up</Text>
             </TouchableOpacity>
             </View>
-          </View>
         </ScrollView>
         </KeyboardAvoidingView>
       </View>

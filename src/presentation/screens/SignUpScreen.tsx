@@ -39,13 +39,12 @@ const SignUpScreen = () => {
     <View style={GlobalStyles(theme).mainContainer}>
       <View style={[GlobalStyles(theme).container,{paddingTop:Platform.OS === 'android' ? 72 : 20}]}>
         <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{flex:1}}>
-        <ScrollView contentContainerStyle={{ alignItems: 'center', justifyContent: 'center' }} showsVerticalScrollIndicator={false}>
-          <View style={{ width: '90%' }}>
+        <ScrollView showsVerticalScrollIndicator={false}>
         <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
           <Text style={GlobalStyles(theme).titleText}>
             Sign Up
           </Text>
-                     <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center' }}>
              {isConnected ? 
                <WiFiOnlineIcon color={colors.networkConnected} width={20} height={20} /> : 
                <WiFiOfflineIcon color={colors.iconGrey} width={20} height={20} />
@@ -70,7 +69,6 @@ const SignUpScreen = () => {
           autoCapitalize="words"
         />
 
-            {/* Display name-specific errors */}
             {fieldErrors.name.length > 0 && (
               <View style={{ marginBottom: 10 }}>
                 {fieldErrors.name.map((error, index) => (
@@ -89,7 +87,6 @@ const SignUpScreen = () => {
           autoCapitalize="none"
         />
 
-            {/* Display email-specific errors */}
             {fieldErrors.email.length > 0 && (
               <View style={{ marginBottom: 10 }}>
                 {fieldErrors.email.map((error, index) => (
@@ -119,7 +116,6 @@ const SignUpScreen = () => {
           </TouchableOpacity>
         </View>
 
-            {/* Display password-specific errors */}
             {fieldErrors.password.length > 0 && (
               <View style={{ marginBottom: 10 }}>
                 {fieldErrors.password.map((error, index) => (
@@ -149,7 +145,6 @@ const SignUpScreen = () => {
           </TouchableOpacity>
         </View>
 
-            {/* Display confirm password-specific errors */}
             {fieldErrors.confirmPassword.length > 0 && (
               <View style={{ marginBottom: 10 }}>
                 {fieldErrors.confirmPassword.map((error, index) => (
@@ -166,7 +161,6 @@ const SignUpScreen = () => {
           disabled={loading}
         />
 
-            {/* Display signup error below the button */}
             {signupError ? (
               <View style={{ marginTop: 10, marginBottom: 10 }}>
                 <Text style={[GlobalStyles(theme).errorText, { fontSize: 14, textAlign: 'center' }]}>
@@ -175,12 +169,11 @@ const SignUpScreen = () => {
               </View>
             ) : null}
 
-        <View style={[GlobalStyles(theme).rowContainer,{marginBottom:10}]}>
-          <Text style={GlobalStyles(theme).mediumText}>Already have an account?</Text>
+          <View style={[GlobalStyles(theme).rowContainer,{marginBottom:10}]}>
+            <Text style={GlobalStyles(theme).mediumText}>Already have an account?</Text>
             <TouchableOpacity onPress={navigateToLogin}>
                 <Text style={GlobalStyles(theme).linkText}>Login</Text>
             </TouchableOpacity>
-          </View>
           </View>
         </ScrollView>
         </KeyboardAvoidingView>

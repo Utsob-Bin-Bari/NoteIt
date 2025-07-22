@@ -1,17 +1,23 @@
 import { useState, useEffect } from 'react';
 import { useDispatch } from 'react-redux';
-import { checkExistingUserSession } from '../../application/services/auth/loginService';
-import { setUserInfo } from '../../application/store/action/auth/setUserInfo';
-import { startSQLiteConnection } from '../../infrastructure/storage/SQLiteStart';
+import { DatabaseInit } from '../../infrastructure/storage/DatabaseInit';
 import { RecoveryService } from '../../application/services/RecoveryService';
+import { checkExistingUserSession } from '../../application/services/auth/login/checkExistingUserSession';
+import { setUserInfo } from '../../application/store/action/auth/setUserInfo';
+import { setAllNotes } from '../../application/store/action/notes/setAllNotes';
+import { setAllBookmarks } from '../../application/store/action/bookmarks/setAllBookmarks';
+import { notesSQLiteService } from '../../application/services/notes/notesSQLiteService';
+import { bookmarksSQLiteService } from '../../application/services/bookmarks/bookmarksSQLiteService';
+// 🚨 DISABLED: Auto-sync functionality removed
+// import { initializeSyncProcessor } from '../../application/services/notes/syncProcessor';
 
 export const useAppInitialization = () => {
   const dispatch = useDispatch();
   
-  const [isInitializing, setIsInitializing] = useState(true);
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [initializationError, setInitializationError] = useState<string>('');
-  const [needsRecovery, setNeedsRecovery] = useState(false);
+  const [isInitialized, setIsInitialized] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [autoRecovery, setAutoRecovery] = useState(false);
   const [recoveryReason, setRecoveryReason] = useState<string>('');
 
   useEffect(() => {
@@ -19,57 +25,93 @@ export const useAppInitialization = () => {
   }, []);
 
   const initializeApp = async () => {
-    setIsInitializing(true);
-    setInitializationError('');
-    setNeedsRecovery(false);
-    
     try {
-      // Step 1: Initialize SQLite database
-      const dbInitialized = await startSQLiteConnection();
-      
-      if (!dbInitialized) {
-        throw new Error('Failed to initialize database');
-      }
-      
-      // Step 2: Check for existing user session (auto-login)
+      setIsLoading(true);
+      setError(null);
+
+
+      // Step 1: Initialize database
+      const dbInit = DatabaseInit.getInstance();
+      await dbInit.initializeDatabase();
+
+      // Step 2: Check for existing user session
       const sessionResult = await checkExistingUserSession();
       
       if (sessionResult.success && sessionResult.data) {
-        // Step 3: Auto-login - populate Redux with existing session
+        
+        // Auto login with existing session
         dispatch(setUserInfo(sessionResult.data));
         
-        // Step 4: Check if recovery is needed for this user
+        // Step 3: POPULATE REDUX FROM SQLITE (Our agreed plan)
+        await populateReduxFromSQLite(sessionResult.data.id);
+        
+        // 🚨 DISABLED: Auto-sync functionality removed for local-only operation
+        
+        /*
+        // TODO: Uncomment for future auto-sync implementation
+        // Initialize sync processor for automatic background sync
+        await initializeSyncProcessor();
+        */
+
+        // Step 4: Check if recovery is needed
         const recoveryCheck = await RecoveryService.detectRecoveryNeed(sessionResult.data.accessToken);
         
-        if (recoveryCheck.needsRecovery && recoveryCheck.canRecover) {
-          setNeedsRecovery(true);
-          setRecoveryReason(recoveryCheck.reason);
+        if (recoveryCheck.needsRecovery) {
+          // Check if backend has data before suggesting recovery
+          try {
+            const hasBackendData = await RecoveryService.checkBackendDataExists(sessionResult.data.accessToken);
+            
+            if (hasBackendData) {
+              setAutoRecovery(true);
+              setRecoveryReason(recoveryCheck.reason || 'Backend data available');
+            }
+          } catch (error) {
+            // If backend check fails, don't trigger auto recovery
+          }
         }
-        
-        setIsLoggedIn(true);
       } else {
-        // No existing session or invalid session
-        setIsLoggedIn(false);
+        
+        // Initialize empty Redux state for non-logged-in users
+        dispatch(setAllNotes([]));
+        dispatch(setAllBookmarks([]));
       }
-      
-    } catch (error) {
-      setInitializationError('Failed to initialize app. Please restart.');
-      setIsLoggedIn(false);
+
+      setIsInitialized(true);
+    } catch (error: any) {
+      console.error('❌ App initialization failed:', error);
+      setError('Failed to initialize app');
     } finally {
-      setIsInitializing(false);
+      setIsLoading(false);
     }
   };
 
-  const retryInitialization = () => {
-    initializeApp();
+  /**
+   * POPULATE REDUX FROM SQLITE - Core part of our agreed plan
+   * User Action → SQLite Database → Redux Update → UI Refresh
+   */
+  const populateReduxFromSQLite = async (userId: string) => {
+    try {
+      const cleanupResult = await notesSQLiteService.cleanupCorruptedNotes(userId);
+      const localNotes = await notesSQLiteService.fetchAllNotes(userId);
+      dispatch(setAllNotes(localNotes));
+
+      const localBookmarks = await bookmarksSQLiteService.fetchBookmarkedNotes(userId);
+      dispatch(setAllBookmarks(localBookmarks));
+
+    } catch (error: any) {
+      console.error('❌ Failed to populate Redux from SQLite:', error);
+      
+      // Initialize with empty arrays to prevent null errors
+      dispatch(setAllNotes([]));
+      dispatch(setAllBookmarks([]));
+    }
   };
 
   return {
-    isInitializing,
-    isLoggedIn,
-    initializationError,
-    needsRecovery,
+    isInitialized,
+    isLoading,
+    error,
+    autoRecovery,
     recoveryReason,
-    retryInitialization,
   };
 }; 

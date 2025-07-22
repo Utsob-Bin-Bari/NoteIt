@@ -10,6 +10,7 @@ export const GlobalStyles = (theme: ThemeType) => StyleSheet.create({
   container: {
     flex: 1,
     width: '80%',
+    paddingVertical:20,
   },
   titleText:{
     color:getColors(theme).primary,
@@ -52,5 +53,60 @@ export const GlobalStyles = (theme: ThemeType) => StyleSheet.create({
     fontSize: 14,
     lineHeight: 18,
     textAlign: 'left',
-  }
+  },
+  loadingContainer: {
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  loadingText: {
+    marginTop: 10,
+  },
+  toggleContainer: {
+    flexDirection: 'row',
+    width: '100%',
+    height: 40,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: getColors(theme).border,
+    overflow: 'hidden',
+    marginBottom:10,
+  },
+  toggleOption: {
+    height: 40,
+    width: '50%',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  toggleText: {
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  componentContainer: {
+    backgroundColor: getColors(theme).secondary,
+    padding: 20,
+    borderRadius: 10,
+    marginBottom: 20,
+    borderWidth: 1,
+    borderColor: getColors(theme).border,
+    minHeight: 200,
+  },
+  componentTitle: {
+    marginBottom: 15,
+    textAlign: 'center',
+  },
+  componentContent: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    flex: 1,
+  },
+  componentSubText: {
+    textAlign: 'center',
+    opacity: 0.7,
+  },
+  componentHintText: {
+    textAlign: 'center',
+    opacity: 0.5,
+    marginTop: 10,
+    fontSize: 14,
+  },
 });

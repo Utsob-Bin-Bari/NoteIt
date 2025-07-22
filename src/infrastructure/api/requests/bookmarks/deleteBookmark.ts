@@ -14,7 +14,6 @@ export const deleteBookmark = async({noteId, accessToken}:{noteId:string, access
         });
         return response.data as RemoveBookmarkResponse;
     }catch(error){
-        console.log(error);
         throw error;
     }
 }

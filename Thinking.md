@@ -117,3 +117,21 @@
 * Support graceful recovery with user choice (restore or skip).
 * Maintain offline-first architecture where SQLite remains source of truth post-recovery.
 
+# Commit 14: Total Backend Funtionality with Clear data and Query Request functionality 
+* Everthing is storing locally through backend 
+* Process: User Action -> Change Local SQLite Store -> Update the Redux (UI) -> Query the operation (With local_id)
+* All functionality required is added 
+  - Authenticaion
+  - Notes CURD Operation
+  - Share Notes 
+  - Search Notes by title
+  - Bookmarks
+  - View Shared Notes
+  - View with whom notes are shared
+* Optimistic Design for good user experiece is implemented
+* Clear SQLite store is implemented. (Extra featuer)
+* Query Management is added. (Extra feature)
+* Missing Feature: (0nline)
+  - Auto Sync from the Query
+  - Conflict Resolution
+

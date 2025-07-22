@@ -14,7 +14,6 @@ export const getUserSharedNotes = async({accessToken}:{accessToken:string}) => {
         });
         return response.data as GetSharedNotesResponse;
     }catch(error){
-        console.log(error);
         throw error;
     }
 }

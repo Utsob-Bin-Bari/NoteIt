@@ -41,8 +41,8 @@ export const RecoveryService = {
         };
       }
 
-      // Check if user has session but no data
-      const [notesResult] = await db.executeSql('SELECT COUNT(*) as count FROM notes WHERE is_deleted = 0');
+      // Check if user has session but no data (hard delete means all existing notes are valid)
+      const [notesResult] = await db.executeSql('SELECT COUNT(*) as count FROM notes');
       const notesCount = notesResult.rows.item(0).count;
 
       if (accessToken && notesCount === 0) {
@@ -86,13 +86,13 @@ export const RecoveryService = {
       
       return hasOwnNotes || hasSharedNotes || hasBookmarkedNotes;
     } catch (error) {
-      console.log('Error checking backend data:', error);
       return false;
     }
   },
 
   /**
-   * Perform full recovery from backend
+   * Perform full recovery from backend server (NOT local database)
+   * This fetches fresh data from the internet/backend and overwrites local storage
    */
   performRecovery: async (accessToken: string): Promise<RecoveryResult> => {
     const result: RecoveryResult = {
@@ -110,7 +110,8 @@ export const RecoveryService = {
       const db = dbInit.getDatabase();
       const currentTime = DatabaseHelpers.getCurrentTimestamp();
 
-      // Step 1: Fetch user data
+
+      // Step 1: Fetch user data from BACKEND SERVER
       try {
         const userData = await getUserData({ accessToken });
         if (userData.user) {
@@ -122,11 +123,11 @@ export const RecoveryService = {
           result.recovered.userData = true;
         }
       } catch (error) {
-        console.log('User data recovery failed:', error);
       }
 
-      // Step 2: Fetch and restore user's own notes
+      // Step 2: Fetch user's own notes from BACKEND SERVER
       const backendNotes = await fetchAllNotes({ accessToken });
+      
       if (backendNotes.notes && backendNotes.notes.length > 0) {
         for (const note of backendNotes.notes) {
           await db.executeSql(
@@ -142,11 +143,13 @@ export const RecoveryService = {
           );
           result.recovered.ownNotes++;
         }
+      } else {
       }
 
-      // Step 3: Fetch and restore shared notes
+      // Step 3: Fetch shared notes from BACKEND SERVER
       try {
         const sharedNotes = await getUserSharedNotes({ accessToken });
+        
         if (sharedNotes.notes && sharedNotes.notes.length > 0) {
           for (const note of sharedNotes.notes) {
             await db.executeSql(
@@ -162,14 +165,15 @@ export const RecoveryService = {
             );
             result.recovered.sharedNotes++;
           }
+        } else {
         }
       } catch (error) {
-        console.log('Shared notes recovery failed:', error);
       }
 
-      // Step 4: Fetch and restore bookmarked notes
+      // Step 4: Fetch bookmarked notes from BACKEND SERVER
       try {
         const bookmarkedNotes = await fetchAllBookmarkedNotes({ accessToken });
+        
         if (bookmarkedNotes.notes && bookmarkedNotes.notes.length > 0) {
           for (const note of bookmarkedNotes.notes) {
             await db.executeSql(
@@ -185,12 +189,12 @@ export const RecoveryService = {
             );
             result.recovered.bookmarkedNotes++;
           }
+        } else {
         }
       } catch (error) {
-        console.log('Bookmarked notes recovery failed:', error);
       }
 
-      // Step 3: Update sync metadata
+      // Step 5: Update sync metadata
       await db.executeSql(
         `INSERT OR REPLACE INTO app_settings (key, value, updated_at) VALUES 
          ('last_full_sync', ?, ?),
@@ -200,11 +204,9 @@ export const RecoveryService = {
 
       result.success = true;
       const totalNotes = result.recovered.ownNotes + result.recovered.sharedNotes + result.recovered.bookmarkedNotes;
-      console.log(`✅ Recovery completed: ${totalNotes} notes restored (${result.recovered.ownNotes} own, ${result.recovered.sharedNotes} shared, ${result.recovered.bookmarkedNotes} bookmarked)`);
       
     } catch (error) {
-      result.error = `Recovery failed: ${error}`;
-      console.log('❌ Recovery failed:', error);
+      result.error = `Recovery from BACKEND SERVER failed: ${error}`;
     }
 
     return result;
@@ -223,10 +225,8 @@ export const RecoveryService = {
       await db.executeSql('DELETE FROM users WHERE id != (SELECT user_id FROM user_session WHERE id = 1)');
       await db.executeSql('DELETE FROM sync_queue');
       
-      console.log('✅ Corrupted data cleared');
       return true;
     } catch (error) {
-      console.log('❌ Failed to clear corrupted data:', error);
       return false;
     }
   }

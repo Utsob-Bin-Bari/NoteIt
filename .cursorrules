@@ -12,6 +12,7 @@ This is a React Native app built with Bare workflow, TypeScript, and Redux Toolk
 - **ALWAYS look for reusable patterns and create shared components**
 - **MUST follow the layered architecture pattern for all screens**
 - Create separate type files in types to keep the types there
+- **ALWAYS use index.js format for index files, never index.ts**
 - Try to avoid changing other functionality when adding new features
 - Review every file before providing responses
 
@@ -48,6 +49,7 @@ This is a React Native app built with Bare workflow, TypeScript, and Redux Toolk
 - Export default at the end of files
 - Use TypeScript interfaces for props
 - Implement proper error boundaries where needed
+- **Use index.js format for all index files (not index.ts)**
 
 ### Styling - CRITICAL RULES
 - **NO direct hex colors in components** - ALWAYS add to `src/presentation/constants/Colors.ts` first
@@ -93,6 +95,8 @@ src/
     ├── styles/        # Global styles and theming
     └── utils/         # Presentation utilities
 ```
+
+**IMPORTANT**: All index files should use `.js` extension, not `.ts`
 
 ### API Integration
 - Use axios for HTTP requests
@@ -427,6 +431,144 @@ import { FlashList } from '@shopify/flash-list';
 - Handle network state changes
 - Provide appropriate user feedback
 
+## Service Refactoring Pattern
+
+### **MANDATORY: Break Down Monolithic Service Files**
+
+When refactoring existing monolithic service files, follow this pattern:
+
+#### **1. Domain Layer - Validation**
+- **Location**: `src/domain/validators/`
+- **Purpose**: Extract ALL validation logic from services to domain layer
+- **Naming**: `[entityName]Validator.ts` (e.g., `loginValidator.ts`, `signupValidator.ts`)
+- **Structure**:
+```typescript
+// src/domain/validators/loginValidator.ts
+export const validateLoginForm = (email: string, password: string): { 
+  isValid: boolean; 
+  fieldErrors: {
+    email: string[];
+    password: string[];
+  };
+} => {
+  // Domain-level validation rules
+};
+```
+
+#### **2. Application Layer - Individual Function Files**
+- **Location**: `src/application/services/[entityName]/[feature]/`
+- **Purpose**: One function per file, ~67 lines maximum
+- **Naming**: `[functionName].ts` (e.g., `loginUser.ts`, `storeUserSession.ts`)
+- **Structure**:
+```typescript
+// src/application/services/auth/login/loginUser.ts
+export const loginUser = async (credentials: LoginRequest): Promise<{
+  success: boolean;
+  data?: any;
+  error?: string;
+}> => {
+  try {
+    // Function-specific logic
+  } catch (error: any) {
+    // Enhanced error handling with actual API messages
+    let errorMessage = 'Default message';
+    
+    if (error.response?.data?.message) {
+      errorMessage = error.response.data.message;
+      console.log('API error message:', errorMessage);
+    }
+    
+    return { success: false, error: errorMessage };
+  }
+};
+```
+
+#### **3. Enhanced Error Handling Requirements**
+- **ALWAYS extract actual error messages from API responses**
+- **Log detailed error information for debugging**
+- **Handle multiple error sources**: `error.response.data.message`, `error.response.data.error`, `error.message`
+- **Map HTTP status codes to meaningful messages**
+- **Console.log every step for debugging**
+
+```typescript
+// Error handling pattern
+catch (error: any) {
+  console.log('Operation error details:', error);
+  
+  let errorMessage = 'Default fallback message';
+  
+  if (error.response?.data?.message) {
+    errorMessage = error.response.data.message;
+    console.log('API error message:', errorMessage);
+  } else if (error.response?.data?.error) {
+    errorMessage = error.response.data.error;
+    console.log('API error:', errorMessage);
+  } else if (error.message) {
+    errorMessage = error.message;
+    console.log('Error message:', errorMessage);
+  }
+
+  // Handle specific HTTP status codes
+  if (error.response?.status === 401) {
+    errorMessage = error.response.data?.message || 'Unauthorized';
+  } else if (error.response?.status === 422) {
+    errorMessage = error.response.data?.message || 'Validation failed';
+  }
+  
+  console.log('Final error message:', errorMessage);
+  return { success: false, error: errorMessage };
+}
+```
+
+#### **4. Index File Pattern**
+- **Location**: `src/application/services/[entityName]/[feature]/index.ts`
+- **Purpose**: Export all feature functions
+- **Reuse Pattern**: Import shared functions instead of duplicating
+
+```typescript
+// src/application/services/auth/login/index.ts
+export { loginUser } from './loginUser';
+export { storeUserSession } from './storeUserSession';
+export { clearUserSession } from './clearUserSession';
+
+// src/application/services/auth/signup/index.ts
+export { signupUser } from './signupUser';
+// Reuse identical functionality
+export { storeUserSession as storeNewUserSession } from '../login/storeUserSession';
+```
+
+#### **5. Import Update Pattern**
+After refactoring, update all imports:
+
+```typescript
+// Before refactoring
+import { validateLoginForm, loginUser } from '../../application/services/auth';
+
+// After refactoring  
+import { validateLoginForm } from '../../domain/validators/loginValidator';
+import { loginUser } from '../../application/services/auth';
+```
+
+#### **6. Refactoring Checklist**
+- [ ] **Move validation to `src/domain/validators/`**
+- [ ] **Break down service into individual function files (~67 lines max)**
+- [ ] **Create feature-specific folder structure**
+- [ ] **Add comprehensive error handling with actual API messages**
+- [ ] **Create index.ts files for clean exports**
+- [ ] **Update all import statements**
+- [ ] **Reuse identical functions instead of duplicating**
+- [ ] **Add detailed console.log statements for debugging**
+- [ ] **Test TypeScript compilation**
+- [ ] **Delete old monolithic service file**
+
+### **Service Architecture Benefits**
+- **Maintainability**: Easy to locate and modify specific functions
+- **Debugging**: Detailed error logging with actual API messages
+- **Reusability**: Functions can be imported individually
+- **Testing**: Individual functions easier to unit test
+- **Code Review**: Smaller files easier to review
+- **DRY Principle**: Shared functions reused across features
+
 ## Common Patterns
 
 ### Layered Architecture Patterns
@@ -614,4 +756,16 @@ const FlexibleComponent = ({
 - [ ] **Files placed in correct layers according to architecture**
 - [ ] **Types defined in appropriate type files**
 - [ ] **Services are functional, not classes**
-- [ ] **Components follow naming conventions** 
+- [ ] **Components follow naming conventions**
+
+### Service Refactoring Compliance
+- [ ] **Monolithic service files broken into individual functions**
+- [ ] **Validation logic moved to domain/validators layer**
+- [ ] **Each service function file under 67 lines**
+- [ ] **Error handling extracts actual API messages**
+- [ ] **Comprehensive console.log statements for debugging**
+- [ ] **Index files created for clean exports**
+- [ ] **Shared functions reused instead of duplicated**
+- [ ] **All imports updated after refactoring**
+- [ ] **TypeScript compilation successful**
+- [ ] **Old monolithic files deleted** 

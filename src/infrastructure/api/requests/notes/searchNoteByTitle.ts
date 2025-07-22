@@ -17,7 +17,6 @@ export const searchNoteByTitle = async({title, accessToken}:{title:string, acces
         });
         return response.data as SearchNotesResponse;
     }catch(error){
-        console.log(error);
         throw error;
     }
 }

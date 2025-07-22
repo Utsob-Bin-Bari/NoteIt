@@ -10,6 +10,15 @@ import {
 export const notesInitialState: NotesState = {
   data: [],
   selectedNoteId: "",
+  loading: false,
+  refreshing: false,
+  syncing: false,
+  syncStatus: {
+    pendingOperations: 0,
+    failedOperations: 0,
+    lastSyncAt: null,
+  },
+  error: null,
 };
 
 // Users initial state
@@ -22,7 +31,16 @@ export const authInitialState: AuthState = {
 
 // Bookmarks initial state
 export const bookmarksInitialState: BookmarksState = {
-  bookmarkedNotes: [],
+  data: [],
+  loading: false,
+  refreshing: false,
+  syncing: false,
+  syncStatus: {
+    pendingOperations: 0,
+    failedOperations: 0,
+    lastSyncAt: null,
+  },
+  error: null,
 };
 
 // Root initial state

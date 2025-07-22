@@ -15,7 +15,6 @@ export const updateNoteById = async({noteId, requestBody, accessToken}:{noteId:s
         });
         return response.data as UpdateNoteResponse;
     }catch(error){
-        console.log(error);
         throw error;
     }
 }

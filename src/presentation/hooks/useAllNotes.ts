@@ -9,8 +9,7 @@ import { notesSQLiteService } from '../../application/services/notes/notesSQLite
 import { deleteNote } from '../../application/services/notes/deleteNote';
 import { bookmarksService } from '../../application/services/bookmarks/bookmarksService';
 import { bookmarksSQLiteService } from '../../application/services/bookmarks/bookmarksSQLiteService';
-import { syncQueueService } from '../../application/services/notes/syncQueueService';
-import { OPERATION_TYPES, ENTITY_TYPES } from '../../infrastructure/storage/DatabaseSchema';
+import { validateNoteOwnership } from '../../domain/validators/noteOwnershipValidator';
 
 export const useAllNotes = () => {
   const dispatch = useDispatch();
@@ -118,29 +117,15 @@ export const useAllNotes = () => {
     // STEP 2: BACKGROUND OPERATIONS (No UI loading)
     try {
       if (currentLocalState) {
-        // Remove bookmark
+        // Remove bookmark - service handles queue and sync automatically
         await bookmarksService.removeBookmark(noteId, authState.id, authState.accessToken);
-
-        const queueId = await syncQueueService.addToQueue(
-          OPERATION_TYPES.UNBOOKMARK,
-          ENTITY_TYPES.BOOKMARK,
-          noteId,
-          { userId: authState.id, removedAt: new Date().toISOString() }
-        );
       } else {
-        // Add bookmark
+        // Add bookmark - service handles queue and sync automatically
         await bookmarksService.addBookmark(noteId, authState.id, authState.accessToken);
-
-        const queueId = await syncQueueService.addToQueue(
-          OPERATION_TYPES.BOOKMARK,
-          ENTITY_TYPES.BOOKMARK,
-          noteId,
-          { userId: authState.id, bookmarkedAt: new Date().toISOString() }
-        );
       }
 
       // STEP 3: UPDATE BOTH REDUX STATES IN BACKGROUND
-      const freshNotes = await notesSQLiteService.fetchAllNotes(authState.id);
+      const freshNotes = await notesSQLiteService.fetchAllNotes(authState.id, authState.email);
       dispatch(setAllNotes(freshNotes));
 
       const freshBookmarks = await bookmarksSQLiteService.fetchBookmarkedNotes(authState.id);
@@ -160,7 +145,7 @@ export const useAllNotes = () => {
       
       // Also restore Redux state
       try {
-        const freshNotes = await notesSQLiteService.fetchAllNotes(authState.id);
+        const freshNotes = await notesSQLiteService.fetchAllNotes(authState.id, authState.email);
         dispatch(setAllNotes(freshNotes));
         
         const freshBookmarks = await bookmarksSQLiteService.fetchBookmarkedNotes(authState.id);
@@ -174,11 +159,22 @@ export const useAllNotes = () => {
   }, [authState?.id, authState?.accessToken, bookmarkStates, dispatch]);
 
   /**
-   * Handle note deletion with Redux state management and optimistic updates
+   * Handle note deletion with Redux state management, optimistic updates, and ownership validation
    */
   const handleDeleteNote = React.useCallback(async (noteId: string): Promise<{ success: boolean; error?: string }> => {
     if (!authState?.id) {
       return { success: false, error: 'Not logged in' };
+    }
+
+    // Additional ownership validation at hook level
+    const noteToDelete = notes.find(note => note.id === noteId || note.local_id === noteId);
+    const ownershipValidation = validateNoteOwnership(noteToDelete || null, authState.id);
+    
+    if (!ownershipValidation.isOwner) {
+      return { 
+        success: false, 
+        error: ownershipValidation.error || 'Only owner can delete the note' 
+      };
     }
     
     // Set loading state for this specific note
@@ -215,7 +211,7 @@ export const useAllNotes = () => {
       
       // Attempt to restore Redux state if delete failed
       try {
-        const freshNotes = await notesSQLiteService.fetchAllNotes(authState.id);
+        const freshNotes = await notesSQLiteService.fetchAllNotes(authState.id, authState.email);
         dispatch(setAllNotes(freshNotes));
         
         const freshBookmarks = await bookmarksSQLiteService.fetchBookmarkedNotes(authState.id);
@@ -233,7 +229,7 @@ export const useAllNotes = () => {
         return newSet;
       });
     }
-  }, [authState?.id, authState?.accessToken, dispatch, loadBookmarkStates]);
+  }, [authState?.id, authState?.accessToken, dispatch, loadBookmarkStates, notes]);
 
   /**
    * Handle refresh with loading state
@@ -244,7 +240,7 @@ export const useAllNotes = () => {
     try {
       dispatch(setNotesRefreshing(true));
       
-      const freshNotes = await notesSQLiteService.fetchAllNotes(authState.id);
+      const freshNotes = await notesSQLiteService.fetchAllNotes(authState.id, authState.email);
       dispatch(setAllNotes(freshNotes));
       
       // Also refresh bookmarks Redux state

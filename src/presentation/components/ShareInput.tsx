@@ -1,5 +1,15 @@
 import React, { useState, useContext } from 'react';
-import { View, TextInput, TouchableOpacity, Text, ActivityIndicator } from 'react-native';
+import { 
+  View, 
+  TextInput, 
+  TouchableOpacity, 
+  Text, 
+  ActivityIndicator, 
+  KeyboardAvoidingView,
+  TouchableWithoutFeedback,
+  Keyboard,
+  Platform
+} from 'react-native';
 import { AppContext } from '../../application/context/AppContext';
 import { ThemeType } from '../../domain/types/theme/theme';
 import { getColors } from '../constants/Colors';
@@ -50,92 +60,99 @@ const ShareInput: React.FC<ShareInputProps> = ({ visible, onShare }) => {
   if (!visible) return null;
 
   return (
-    <View style={{
-      marginTop: 10,
-      backgroundColor: colors.inputBackground,
-      borderRadius: 8,
-      borderWidth: 1,
-      borderColor: colors.border,
-      padding: 12,
-    }}>
-      <Text style={{
-        fontSize: 14,
-        fontWeight: '600',
-        color: colors.text,
-        marginBottom: 8,
-      }}>
-        Share this note:
-      </Text>
-      
-      <View style={{
-        flexDirection: 'row',
-        alignItems: 'center',
-      }}>
-        <TextInput
-          style={{
-            flex: 1,
-            height: 40,
-            paddingHorizontal: 12,
-            fontSize: 16,
+    <KeyboardAvoidingView 
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      keyboardVerticalOffset={Platform.OS === 'ios' ? 60 : 0}
+    >
+      <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+        <View style={{
+          marginTop: 10,
+          backgroundColor: colors.inputBackground,
+          borderRadius: 8,
+          borderWidth: 1,
+          borderColor: colors.border,
+          padding: 12,
+        }}>
+          <Text style={{
+            fontSize: 14,
+            fontWeight: '600',
             color: colors.text,
-            backgroundColor: colors.background,
-            borderRadius: 6,
-            borderWidth: 1,
-            borderColor: error ? colors.error : colors.border,
-            marginRight: 10,
-          }}
-          value={email}
-          onChangeText={(text) => {
-            setEmail(text);
-            if (error) setError(null); // Clear error when typing
-          }}
-          placeholder="Enter email address"
-          placeholderTextColor={colors.placeholder}
-          selectionColor={colors.primary}
-          keyboardType="email-address"
-          autoCapitalize="none"
-          autoCorrect={false}
-        />
-        
-        <TouchableOpacity
-          onPress={handleShare}
-          disabled={sharing || showSuccess}
-          style={{
-            backgroundColor: showSuccess ? colors.success : colors.primary,
-            borderRadius: 6,
-            paddingHorizontal: 16,
-            paddingVertical: 10,
-            minWidth: 60,
+            marginBottom: 8,
+          }}>
+            Share this note:
+          </Text>
+          
+          <View style={{
+            flexDirection: 'row',
             alignItems: 'center',
-            justifyContent: 'center',
-          }}
-        >
-          {sharing ? (
-            <ActivityIndicator size="small" color="white" />
-          ) : showSuccess ? (
-            <CheckIcon color="white" width={16} height={16} />
-          ) : (
+          }}>
+            <TextInput
+              style={{
+                flex: 1,
+                height: 40,
+                paddingHorizontal: 12,
+                fontSize: 16,
+                color: colors.text,
+                backgroundColor: colors.background,
+                borderRadius: 6,
+                borderWidth: 1,
+                borderColor: error ? colors.error : colors.border,
+                marginRight: 10,
+              }}
+              value={email}
+              onChangeText={(text) => {
+                setEmail(text);
+                if (error) setError(null); // Clear error when typing
+              }}
+              placeholder="Enter email address"
+              placeholderTextColor={colors.placeholder}
+              selectionColor={colors.primary}
+              keyboardType="email-address"
+              autoCapitalize="none"
+              autoCorrect={false}
+            />
+            
+            <TouchableOpacity
+              onPress={handleShare}
+              disabled={sharing || showSuccess}
+              style={{
+                backgroundColor: showSuccess ? colors.success : colors.primary,
+                borderRadius: 6,
+                paddingHorizontal: 16,
+                paddingVertical: 10,
+                minWidth: 60,
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+            >
+              {sharing ? (
+                <ActivityIndicator size="small" color="white" />
+              ) : showSuccess ? (
+                <CheckIcon color="white" width={16} height={16} />
+              ) : (
+                <Text style={{
+                  color: 'white',
+                  fontSize: 14,
+                  fontWeight: '600',
+                }}>
+                  Share
+                </Text>
+              )}
+            </TouchableOpacity>
+          </View>
+          
+          {error && (
             <Text style={{
-              color: 'white',
-              fontSize: 14,
-              fontWeight: '600',
+              fontSize: 12,
+              color: colors.error,
+              marginTop: 6,
             }}>
-              Share
+              {error}
             </Text>
           )}
-        </TouchableOpacity>
-      </View>
-      
-      {error && (
-        <Text style={{
-          fontSize: 12,
-          color: colors.error,
-          marginTop: 6,
-        }}>
-          {error}
-        </Text>
-      )}
-    </View>
+        </View>
+      </TouchableWithoutFeedback>
+    </KeyboardAvoidingView>
   );
 };
 

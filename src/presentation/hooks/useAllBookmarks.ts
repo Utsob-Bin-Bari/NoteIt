@@ -9,9 +9,7 @@ import { setAllNotes } from '../../application/store/action/notes/setAllNotes';
 import { bookmarksService } from '../../application/services/bookmarks/bookmarksService';
 import { bookmarksSQLiteService } from '../../application/services/bookmarks/bookmarksSQLiteService';
 import { notesSQLiteService } from '../../application/services/notes/notesSQLiteService';
-import { syncQueueService } from '../../application/services/notes/syncQueueService';
 import { NetworkService } from '../../infrastructure/utils/NetworkService';
-import { OPERATION_TYPES, ENTITY_TYPES } from '../../infrastructure/storage/DatabaseSchema';
 
 /**
  * Bookmarks hook with optimistic UI updates (matching useAllNotes approach)
@@ -139,25 +137,11 @@ export const useAllBookmarks = () => {
 
       // STEP 2: BACKGROUND OPERATIONS (Same as useAllNotes)
       if (isCurrentlyBookmarked) {
-        // Remove bookmark
+        // Remove bookmark - service handles queue and sync automatically
         await bookmarksService.removeBookmark(noteId, reduxUserData.id, reduxUserData.accessToken);
-
-        const queueId = await syncQueueService.addToQueue(
-          OPERATION_TYPES.UNBOOKMARK,
-          ENTITY_TYPES.BOOKMARK,
-          noteId,
-          { userId: reduxUserData.id, removedAt: new Date().toISOString() }
-        );
       } else {
-        // Add bookmark
+        // Add bookmark - service handles queue and sync automatically
         await bookmarksService.addBookmark(noteId, reduxUserData.id, reduxUserData.accessToken);
-
-        const queueId = await syncQueueService.addToQueue(
-          OPERATION_TYPES.BOOKMARK,
-          ENTITY_TYPES.BOOKMARK,
-          noteId,
-          { userId: reduxUserData.id, bookmarkedAt: new Date().toISOString() }
-        );
       }
 
       // STEP 3: UPDATE BOTH REDUX STATES IN BACKGROUND

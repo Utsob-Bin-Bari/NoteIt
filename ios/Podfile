@@ -23,8 +23,8 @@ target 'NoteIt' do
     :app_path => "#{Pod::Config.instance.installation_root}/..",
     # Enable Hermes for iOS
     :hermes_enabled => true,
-    # Enable New Architecture (Fabric + TurboModules)
-    :fabric_enabled => true
+    # Temporarily disable New Architecture to avoid conflicts
+    :fabric_enabled => false
   )
 
   # Add react-native-sqlite-storage pod
@@ -38,5 +38,14 @@ target 'NoteIt' do
       :mac_catalyst_enabled => false,
       # :ccache_enabled => true
     )
+    
+    # Fix for build phase script issues
+    installer.pods_project.targets.each do |target|
+      target.build_phases.each do |phase|
+        if phase.is_a?(Xcodeproj::Project::Object::PBXShellScriptBuildPhase)
+          phase.always_out_of_date = "1"
+        end
+      end
+    end
   end
 end

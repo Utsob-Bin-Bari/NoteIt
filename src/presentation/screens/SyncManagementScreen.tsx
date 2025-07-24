@@ -8,7 +8,7 @@ import { useSyncManagement } from '../hooks/useSyncManagement';
 import { QueueOperation } from '../../application/services/notes/syncQueueService';
 import { getColors } from '../constants/Colors';
 import { getSimpleHeaderOptions } from '../styles/CustomHeaderStyle';
-import { BinIcon, SyncIcon, CheckIcon } from '../components/icons';
+import { BinIcon, SyncIcon, CheckIcon, StatsIcon } from '../components/icons';
 
 const SyncManagementScreen = ({ navigation }: any) => {
   const { theme, toggleTheme } = useContext(AppContext) as { theme: ThemeType, toggleTheme: () => void };
@@ -315,38 +315,30 @@ const SyncManagementScreen = ({ navigation }: any) => {
   return (
     <View style={GlobalStyles(theme).mainContainer}>
       <View style={[GlobalStyles(theme).container, { width: '90%', alignSelf: 'center'}]}>
-      <ScrollView 
-        showsVerticalScrollIndicator={false}
-        refreshControl={
-          <RefreshControl
-            refreshing={loading}
-            onRefresh={loadSyncData}
-            tintColor={colors.primary}
-            colors={[colors.primary]}
-          />
-        }
-      >
         
-        {/* Enhanced Queue Status */}
+        {/* Fixed Queue Status - Not Scrollable */}
         <View style={{
           backgroundColor: colors.inputBackground,
           borderRadius: 12,
           padding: 20,
-          marginBottom: 20,
+          marginBottom: 15,
           borderWidth: 1,
           borderColor: colors.border,
         }}>
-          <Text style={[
-            GlobalStyles(theme).text,
-            {
-              fontSize: 18,
-              fontWeight: '600',
-              color: colors.text,
-              marginBottom: 15,
-            }
-          ]}>
-            📊 Queue Status
-          </Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 15 }}>
+            <StatsIcon color={colors.networkConnected} width={20} height={20} />
+            <Text style={[
+              GlobalStyles(theme).text,
+              {
+                fontSize: 18,
+                fontWeight: '600',
+                color: colors.networkConnected,
+                marginLeft: 8,
+              }
+            ]}>
+              Queue Status
+            </Text>
+          </View>
           
           <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginBottom: 8 }}>
             <Text style={[GlobalStyles(theme).text, { fontSize: 16, color: colors.warning }]}>
@@ -367,48 +359,13 @@ const SyncManagementScreen = ({ navigation }: any) => {
           </View>
         </View>
 
-        {/* Operations List Header */}
-        {allOperations.length > 0 && (
-          <View style={{
-            backgroundColor: colors.inputBackground,
-            borderRadius: 12,
-            padding: 16,
-            marginBottom: 12,
-            borderWidth: 1,
-            borderColor: colors.border,
-          }}>
-            <Text style={[
-              GlobalStyles(theme).text,
-              {
-                fontSize: 18,
-                fontWeight: '600',
-                color: colors.text,
-                textAlign: 'center',
-              }
-            ]}>
-              📋 All Operations ({allOperations.length})
-            </Text>
-            <Text style={[
-              GlobalStyles(theme).text,
-              {
-                fontSize: 14,
-                color: colors.text + '80',
-                textAlign: 'center',
-                marginTop: 4,
-              }
-            ]}>
-              Direct from database • Pull to refresh
-            </Text>
-          </View>
-        )}
-
-        {/* Sync All Operations */}
+        {/* Fixed Retry All Operations - Not Scrollable */}
         <TouchableOpacity 
           style={{
             backgroundColor: colors.inputBackground,
             borderRadius: 12,
             padding: 20,
-            marginBottom: 20,
+            marginBottom: 15,
             borderWidth: 1,
             borderColor: colors.border,
           }}
@@ -445,6 +402,89 @@ const SyncManagementScreen = ({ navigation }: any) => {
             Retry all failed sync operations. This will attempt to sync them again.
           </Text>
         </TouchableOpacity>
+
+        {/* Empty State - Fixed Position, Same Width */}
+        {allOperations.length === 0 && !loading && (
+          <View style={{
+            backgroundColor: colors.inputBackground,
+            borderRadius: 12,
+            padding: 30,
+            marginBottom: 15,
+            borderWidth: 1,
+            borderColor: colors.border,
+            alignItems: 'center',
+          }}>
+            <Text style={[
+              GlobalStyles(theme).text,
+              {
+                fontSize: 18,
+                fontWeight: '600',
+                color: colors.text,
+                textAlign: 'center',
+                marginBottom: 8,
+              }
+            ]}>
+              No Operations Found
+            </Text>
+            <Text style={[
+              GlobalStyles(theme).text,
+              {
+                fontSize: 14,
+                color: colors.text + '80',
+                textAlign: 'center',
+              }
+            ]}>
+              Create, update, or delete notes to see sync operations here
+            </Text>
+          </View>
+        )}
+
+      <ScrollView 
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={loading}
+            onRefresh={loadSyncData}
+            tintColor={colors.primary}
+            colors={[colors.primary]}
+          />
+        }
+      >
+        
+        {/* Operations List Header */}
+        {allOperations.length > 0 && (
+          <View style={{
+            backgroundColor: colors.inputBackground,
+            borderRadius: 12,
+            padding: 16,
+            marginBottom: 12,
+            borderWidth: 1,
+            borderColor: colors.border,
+          }}>
+            <Text style={[
+              GlobalStyles(theme).text,
+              {
+                fontSize: 18,
+                fontWeight: '600',
+                color: colors.text,
+                textAlign: 'center',
+              }
+            ]}>
+              📋 All Operations ({allOperations.length})
+            </Text>
+            <Text style={[
+              GlobalStyles(theme).text,
+              {
+                fontSize: 14,
+                color: colors.text + '80',
+                textAlign: 'center',
+                marginTop: 4,
+              }
+            ]}>
+              Direct from database • Pull to refresh
+            </Text>
+          </View>
+        )}
 
         {/* Clear Failed Delete Operations */}
         {failedDeletesCount > 0 && (
@@ -492,46 +532,7 @@ const SyncManagementScreen = ({ navigation }: any) => {
           </TouchableOpacity>
         )}
 
-        {/* Clear Completed Operations */}
-        <TouchableOpacity 
-          style={{
-            backgroundColor: colors.inputBackground,
-            borderRadius: 12,
-            padding: 20,
-            marginBottom: 20,
-            borderWidth: 1,
-            borderColor: colors.border,
-          }}
-          onPress={handleClearCompleted}
-          disabled={loading}
-        >
-          <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 15 }}>
-            <CheckIcon color={colors.success} width={24} height={24} />
-            <Text style={[
-              GlobalStyles(theme).text,
-              {
-                fontSize: 18,
-                fontWeight: '600',
-                color: colors.success,
-                marginLeft: 12,
-              }
-            ]}>
-              Clear Completed Operations
-            </Text>
-          </View>
-          
-          <Text style={[
-            GlobalStyles(theme).text,
-            {
-              fontSize: 16,
-              color: colors.text,
-              lineHeight: 24,
-              opacity: 0.8,
-            }
-          ]}>
-            Remove all completed operations from the sync queue to clean up the database.
-          </Text>
-        </TouchableOpacity>
+
 
         {error ? (
           <Text style={[GlobalStyles(theme).errorText, { marginTop: 10, textAlign: 'center', marginBottom: 20 }]}>
@@ -558,43 +559,7 @@ const SyncManagementScreen = ({ navigation }: any) => {
           />
         </View>
       )}
-      
-      {/* Empty State */}
-      {allOperations.length === 0 && !loading && (
-        <View style={{
-          backgroundColor: colors.inputBackground,
-          borderRadius: 12,
-          padding: 30,
-          margin: 20,
-          borderWidth: 1,
-          borderColor: colors.border,
-          alignItems: 'center',
-        }}>
-          <Text style={{ fontSize: 40, marginBottom: 10 }}>📭</Text>
-          <Text style={[
-            GlobalStyles(theme).text,
-            {
-              fontSize: 18,
-              fontWeight: '600',
-              color: colors.text,
-              textAlign: 'center',
-              marginBottom: 8,
-            }
-          ]}>
-            No Operations Found
-          </Text>
-          <Text style={[
-            GlobalStyles(theme).text,
-            {
-              fontSize: 14,
-              color: colors.text + '80',
-              textAlign: 'center',
-            }
-          ]}>
-            Create, update, or delete notes to see sync operations here
-          </Text>
-        </View>
-      )}
+
       </View>
     </View>
   );

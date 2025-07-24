@@ -12,5 +12,3 @@ export interface LoginRequest {
       name: string;
     };
   }
-
-// Login Validation: None existing email, password>=6, email format.

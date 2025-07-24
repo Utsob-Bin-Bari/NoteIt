@@ -325,6 +325,16 @@ const AllBookmarksComponent: React.FC<AllBookmarksComponentProps> = ({
    * Handle share icon press to toggle share input visibility
    */
   const handleSharePress = useCallback((bookmark: any) => {
+    // Check if current user is the owner of the note
+    if (bookmark.owner_id !== currentUserId) {
+      Alert.alert(
+        'Cannot Share Note',
+        'You have to be the owner to able to share the note.',
+        [{ text: 'OK' }]
+      );
+      return;
+    }
+
     // Use same ID resolution as other functions
     const bookmarkId = bookmark.id || bookmark.local_id || `bookmark_${Date.now()}_${Math.random()}`;
     setVisibleShareInput(prev => {
@@ -336,7 +346,7 @@ const AllBookmarksComponent: React.FC<AllBookmarksComponentProps> = ({
       }
       return newSet;
     });
-  }, []);
+  }, [currentUserId]);
 
   /**
    * Handle bookmark sharing
@@ -348,9 +358,7 @@ const AllBookmarksComponent: React.FC<AllBookmarksComponentProps> = ({
       // Import shareNote service
       const { shareNote } = await import('../../application/services/notes/shareNote');
       
-      // Use current user ID from auth state
-      
-      const result = await shareNote(bookmarkId, email, currentUserId || '', dispatch);
+      const result = await shareNote(bookmarkId, email, currentUserId || '', dispatch, authState?.accessToken);
       
       if (result.success) {
         // Hide share input after successful share
@@ -369,7 +377,7 @@ const AllBookmarksComponent: React.FC<AllBookmarksComponentProps> = ({
         error: 'Failed to share bookmark. Please try again.'
       };
     }
-  }, [dispatch]);
+  }, [currentUserId, dispatch, authState?.accessToken]);
 
   // Memoize renderItem to prevent unnecessary re-creations
   const renderItem = useCallback(({ item }: { item: any }) => {
@@ -478,6 +486,7 @@ const AllBookmarksComponent: React.FC<AllBookmarksComponentProps> = ({
         estimatedItemSize={120}
         keyExtractor={safeKeyExtractor}
         showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
         refreshControl={
           <RefreshControl
             refreshing={isRefreshing}

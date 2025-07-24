@@ -75,15 +75,10 @@ export const syncQueueService = {
   },
 
   /**
-   * Get all pending operations from queue (returns empty for UI)
-   * 🚨 DISABLED: Returns empty array for UI compatibility
+   * Get all pending operations from queue (FIFO order for sync)
+   * ✅ ENABLED: Returns pending operations for sync processing
    */
   getPendingOperations: async (): Promise<QueueOperation[]> => {
-    // 🚨 DISABLED: Returns empty array for UI compatibility
-    return Promise.resolve([]);
-    
-    /*
-    // TODO: Uncomment for future sync implementation
     const db = DatabaseInit.getInstance().getDatabase();
     
     return new Promise((resolve, reject) => {
@@ -96,31 +91,35 @@ export const syncQueueService = {
           (_, result) => {
             const operations: QueueOperation[] = [];
             for (let i = 0; i < result.rows.length; i++) {
-              operations.push(result.rows.item(i));
+              const row = result.rows.item(i);
+              operations.push({
+                id: row.id,
+                operation_type: row.operation_type,
+                entity_type: row.entity_type,
+                entity_id: row.entity_id,
+                payload: row.payload,
+                created_at: row.created_at,
+                retry_count: row.retry_count,
+                max_retries: row.max_retries,
+                status: row.status
+              });
             }
             resolve(operations);
           },
           (_, error) => {
-            console.error('Error fetching pending operations:', error);
             reject(error);
             return false;
           }
         );
       });
     });
-    */
   },
 
   /**
-   * Mark operation as completed and remove from queue (DISABLED)
-   * 🚨 DISABLED: No operations to mark as completed
+   * Mark operation as completed and remove from queue
+   * ✅ ENABLED: Removes completed sync operations
    */
   markOperationCompleted: async (operationId: number): Promise<void> => {
-    // 🚨 DISABLED: No operations to mark as completed
-    return Promise.resolve();
-    
-    /*
-    // TODO: Uncomment for future sync implementation
     const db = DatabaseInit.getInstance().getDatabase();
     
     return new Promise((resolve, reject) => {
@@ -132,26 +131,19 @@ export const syncQueueService = {
             resolve();
           },
           (_, error) => {
-            console.error('Error marking operation as completed:', error);
             reject(error);
             return false;
           }
         );
       });
     });
-    */
   },
 
   /**
-   * Increment retry count for failed operation (DISABLED)
-   * 🚨 DISABLED: No operations to retry
+   * Increment retry count for failed operation
+   * ✅ ENABLED: Handles retry logic for failed sync operations
    */
   incrementRetryCount: async (operationId: number): Promise<boolean> => {
-    // 🚨 DISABLED: No operations to retry
-    return Promise.resolve(false);
-    
-    /*
-    // TODO: Uncomment for future sync implementation
     const db = DatabaseInit.getInstance().getDatabase();
     
     return new Promise((resolve, reject) => {
@@ -182,7 +174,6 @@ export const syncQueueService = {
                   resolve(false); // No more retries
                 },
                 (_, error) => {
-                  console.error('Error marking operation as failed:', error);
                   reject(error);
                   return false;
                 }
@@ -196,7 +187,6 @@ export const syncQueueService = {
                   resolve(true); // Can retry
                 },
                 (_, error) => {
-                  console.error('Error incrementing retry count:', error);
                   reject(error);
                   return false;
                 }
@@ -204,14 +194,12 @@ export const syncQueueService = {
             }
           },
           (_, error) => {
-            console.error('Error fetching operation for retry:', error);
             reject(error);
             return false;
           }
         );
       });
     });
-    */
   },
 
   /**
@@ -252,15 +240,10 @@ export const syncQueueService = {
   },
 
   /**
-   * Reset failed operation for manual retry (DISABLED)
-   * 🚨 DISABLED: No operations to reset
+   * Reset failed operation for manual retry (ENABLED)
+   * ✅ ENABLED: Resets failed operations to pending for retry
    */
   resetFailedOperation: async (operationId: number): Promise<void> => {
-    // 🚨 DISABLED: No operations to reset
-    return Promise.resolve();
-    
-    /*
-    // TODO: Uncomment for future sync implementation
     const db = DatabaseInit.getInstance().getDatabase();
     
     return new Promise((resolve, reject) => {
@@ -282,7 +265,34 @@ export const syncQueueService = {
         );
       });
     });
-    */
+  },
+
+  /**
+   * Reset ALL failed operations for manual retry
+   * ✅ ENABLED: Resets all failed operations to pending for retry
+   */
+  resetAllFailedOperations: async (): Promise<number> => {
+    const db = DatabaseInit.getInstance().getDatabase();
+    
+    return new Promise((resolve, reject) => {
+      db.transaction(tx => {
+        tx.executeSql(
+          `UPDATE sync_queue SET 
+           status = 'pending', 
+           retry_count = 0 
+           WHERE status = 'failed'`,
+          [],
+          (_, result) => {
+            resolve(result.rowsAffected || 0);
+          },
+          (_, error) => {
+            console.error('Error resetting all failed operations:', error);
+            reject(error);
+            return false;
+          }
+        );
+      });
+    });
   },
 
   /**
@@ -440,15 +450,10 @@ export const syncQueueService = {
   },
 
   /**
-   * Update entity ID in sync queue (DISABLED)
-   * 🚨 DISABLED: No operations to update
+   * Update entity ID in sync queue (for local_id to server_id mapping)
+   * ✅ ENABLED: Updates queue when local_id becomes server_id
    */
   updateEntityId: async (operationId: number, newEntityId: string): Promise<void> => {
-    // 🚨 DISABLED: No operations to update
-    return Promise.resolve();
-    
-    /*
-    // TODO: Uncomment for future sync implementation
     const db = DatabaseInit.getInstance().getDatabase();
     
     return new Promise((resolve, reject) => {
@@ -457,19 +462,14 @@ export const syncQueueService = {
           `UPDATE sync_queue SET entity_id = ? WHERE id = ?`,
           [newEntityId, operationId],
           (_, result) => {
-            if (result.rowsAffected > 0) {
-            } else {
-            }
             resolve();
           },
           (_, error) => {
-            console.error('Error updating entity ID in sync queue:', error);
             reject(error);
             return false;
           }
         );
       });
     });
-    */
   },
 }; 

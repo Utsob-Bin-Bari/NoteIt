@@ -5,6 +5,7 @@ import { Alert } from 'react-native';
 import { StackNavigatorParamList } from '../navigation/types/StackNavigator';
 import { syncQueueService, QueueOperation } from '../../application/services/notes/syncQueueService';
 import { clearFailedDeleteOperations } from '../../application/services/notes/clearFailedDeletes';
+import { manualProcessQueue } from '../../application/services/notes/syncProcessor';
 
 type OperationState = 'idle' | 'loading' | 'completed' | 'failed';
 
@@ -93,24 +94,36 @@ export const useSyncManagement = () => {
         'Delete Operation', 
         `Are you sure you want to delete "${operationName}"?`,
         [
-          { text: 'Cancel', style: 'cancel' },
+          { text: 'Cancel', style: 'cancel', onPress: () => {
+            setOperationStates(prev => ({ ...prev, [operationId]: 'idle' }));
+          }},
           { 
             text: 'Delete', 
             style: 'destructive',
             onPress: async () => {
-              // Since operations are disabled, just show a message
-              setOperationStates(prev => ({ ...prev, [operationId]: 'completed' }));
-              
-              // Refresh data after a delay
-              setTimeout(async () => {
-                await loadSyncData();
-                setOperationStates(prev => ({ ...prev, [operationId]: 'idle' }));
-              }, 1000);
+              try {
+                // Actually delete the operation from database
+                await syncQueueService.markOperationCompleted(operationId);
+                setOperationStates(prev => ({ ...prev, [operationId]: 'completed' }));
+                
+                // Refresh data to show updated list
+                setTimeout(async () => {
+                  await loadSyncData();
+                  setOperationStates(prev => ({ ...prev, [operationId]: 'idle' }));
+                }, 500);
+              } catch (deleteError: any) {
+                console.error('❌ Error deleting operation:', deleteError);
+                setOperationStates(prev => ({ ...prev, [operationId]: 'failed' }));
+                setTimeout(() => {
+                  setOperationStates(prev => ({ ...prev, [operationId]: 'idle' }));
+                }, 2000);
+              }
             }
           }
         ]
       );
     } catch (error) {
+      console.error('❌ Error in delete operation handler:', error);
       setOperationStates(prev => ({ ...prev, [operationId]: 'failed' }));
       setTimeout(() => {
         setOperationStates(prev => ({ ...prev, [operationId]: 'idle' }));
@@ -125,17 +138,22 @@ export const useSyncManagement = () => {
     setOperationStates(prev => ({ ...prev, [operationId]: 'loading' }));
     
     try {
-      // Since sync is disabled, just show a completed state
-      setTimeout(() => {
-        setOperationStates(prev => ({ ...prev, [operationId]: 'completed' }));
-        
-        // Reset state after delay
-        setTimeout(() => {
-          setOperationStates(prev => ({ ...prev, [operationId]: 'idle' }));
-        }, 2000);
+      // Reset the failed operation to pending status
+      await syncQueueService.resetFailedOperation(operationId);
+      
+      // Trigger queue processing to attempt sync
+      await manualProcessQueue();
+      
+      setOperationStates(prev => ({ ...prev, [operationId]: 'completed' }));
+      
+      // Refresh data to show updated status
+      setTimeout(async () => {
+        await loadSyncData();
+        setOperationStates(prev => ({ ...prev, [operationId]: 'idle' }));
       }, 1000);
       
-    } catch (error) {
+    } catch (error: any) {
+      console.error('❌ Error retrying operation:', error);
       setOperationStates(prev => ({ ...prev, [operationId]: 'failed' }));
       setTimeout(() => {
         setOperationStates(prev => ({ ...prev, [operationId]: 'idle' }));
@@ -144,14 +162,48 @@ export const useSyncManagement = () => {
   };
 
   /**
-   * Handle sync all operations (mock for disabled sync)
+   * Handle sync all failed operations - Reset all failed operations and trigger queue processing
    */
   const handleSyncAll = async () => {
-    Alert.alert(
-      'Sync All Operations',
-      'Sync functionality is currently disabled for local-only operation. Operations are stored but not synced to server.',
-      [{ text: 'OK' }]
-    );
+    try {
+      setLoading(true);
+      setError('');
+      
+      // Reset all failed operations to pending status
+      const resetCount = await syncQueueService.resetAllFailedOperations();
+      
+      if (resetCount === 0) {
+        Alert.alert(
+          'No Failed Operations',
+          'There are no failed operations to retry.',
+          [{ text: 'OK' }]
+        );
+        return;
+      }
+      
+      // Trigger queue processing to attempt sync for all operations
+      const result = await manualProcessQueue();
+      
+      // Refresh data to show updated status
+      await loadSyncData();
+      
+      Alert.alert(
+        'Retry Completed',
+        `Reset ${resetCount} failed operation(s) and triggered sync processing. Check the operations list for updated status.`,
+        [{ text: 'OK' }]
+      );
+      
+    } catch (error: any) {
+      console.error('❌ Error in sync all operations:', error);
+      setError(error.message || 'Failed to retry operations');
+      Alert.alert(
+        'Retry Failed',
+        'Failed to retry operations. Please try again.',
+        [{ text: 'OK' }]
+      );
+    } finally {
+      setLoading(false);
+    }
   };
 
   /**

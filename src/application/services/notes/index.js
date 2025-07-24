@@ -1,6 +1,7 @@
 export { notesService } from './notesService';
 export { noteEditorService } from './noteEditorService';
 export { notesSQLiteService } from './notesSQLiteService';
+export { conflictResolutionService } from './conflictResolutionService';
 export { deleteNote } from './deleteNote';
 export { shareNote } from './shareNote';
 export { syncProcessor, startSyncProcessor, stopSyncProcessor, initializeSyncProcessor } from './syncProcessor';

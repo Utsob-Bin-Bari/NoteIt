@@ -117,7 +117,7 @@
 * Support graceful recovery with user choice (restore or skip).
 * Maintain offline-first architecture where SQLite remains source of truth post-recovery.
 
-# Commit 14: Total Backend Funtionality with Clear data and Query Request functionality 
+# Commit 14: Total Backend Funtionality with Clear data and Query Management functionality 
 * Everthing is storing locally through backend 
 * Process: User Action -> Change Local SQLite Store -> Update the Redux (UI) -> Query the operation (With local_id)
 * All functionality required is added 
@@ -131,7 +131,71 @@
 * Optimistic Design for good user experiece is implemented
 * Clear SQLite store is implemented. (Extra featuer)
 * Query Management is added. (Extra feature)
-* Missing Feature: (0nline)
-  - Auto Sync from the Query
-  - Conflict Resolution
+
+# Commit 15: Conflict Resolution, Security & Enhanced UX Implementation
+* Complete conflict resolution system implemented using diff-match-patch for intelligent note merging.
+* Multi-layer ownership validation system to secure note operations.
+* Comprehensive keyboard behavior improvements across all input components.
+* Enhanced user experience with tap-to-dismiss functionality and keyboard avoidance.
+
+## Conflict Resolution & Data Synchronization
+* **diff-match-patch Integration**: Intelligent 3-way merge algorithm for handling simultaneous note edits.
+  - Last write wins strategy for conflict resolution with user notification
+  - Server-side conflict detection when internet available and note has server_id
+  - Automatic merging of non-conflicting changes while preserving user intent
+* **Real-time Conflict Handling**: Applied to both direct updates and back button update operations.
+  - Conflict resolution in noteEditorService.updateNoteWithRedux()
+  - User feedback via alerts when conflicts are resolved
+  - Graceful fallback when conflict resolution fails
+* **Network-Aware Operation**: Only triggers when online with server_id present, maintaining offline-first architecture.
+
+## Security & Ownership Validation System
+* **Multi-Layer Protection**: 3-tier validation system for note deletion security.
+  - UI Component Level: Pre-delete ownership validation with user alerts
+  - React Hook Level: Secondary validation in useAllNotes with structured error responses  
+  - Service Level: Final validation in deleteNote service before database operations
+* **Domain Layer Validation**: Created noteOwnershipValidator.ts following layered architecture.
+  - validateNoteOwnership() for direct note object validation
+  - validateNoteOwnershipById() for ID-based validation with note searching
+  - Supports both server IDs and local IDs for comprehensive coverage
+* **User Experience**: Clear "Only owner can delete the note" alerts prevent unauthorized actions.
+  - No breaking of existing functionality for legitimate operations
+  - Seamless experience for note owners with normal delete flow
+
+## Enhanced Keyboard & Input Management
+* **ShareInput Component**: Complete keyboard avoidance and dismissal system.
+  - KeyboardAvoidingView with platform-specific behavior (iOS: padding, Android: height)
+  - TouchableWithoutFeedback for tap-anywhere-to-dismiss functionality
+  - Custom keyboard offset optimization for share input context
+* **NoteScreen Enhancement**: Tap-to-dismiss keyboard while maintaining editing capabilities.
+  - Enhanced existing KeyboardAvoidingView with TouchableWithoutFeedback wrapper
+  - Accessible={false} to prevent accessibility interference
+  - Seamless integration with title and content TextInputs
+* **SearchInput & HomeScreen**: Global keyboard dismissal for search functionality.
+  - onSubmitEditing keyboard dismissal on return/search key press
+  - HomeScreen TouchableWithoutFeedback for global search keyboard management
+  - blurOnSubmit optimization for better search experience
+* **FlashList Optimizations**: Added keyboardShouldPersistTaps="handled" to both AllNotesComponent and AllBookmarksComponent.
+  - Allows interaction with notes/bookmarks while keyboard is visible
+  - Smooth scrolling and interaction during share input usage
+
+## Architecture & Performance Improvements
+* **Layered Architecture Compliance**: All new features follow established Clean Architecture patterns.
+  - Validators in domain layer, services in application layer, UI in presentation layer
+  - Functional service patterns maintained (no classes in service layer)
+  - Proper separation of concerns with single responsibility principle
+* **Type Safety & Error Handling**: Full TypeScript implementation with comprehensive error handling.
+  - Robust ID handling supporting both server IDs and local IDs
+  - Memory-safe React callback dependencies and cleanup
+  - Platform-specific optimizations for iOS and Android
+* **User Experience Focus**: Non-intrusive conflict resolution with clear user feedback.
+  - Optimistic UI updates maintained while adding security layers
+  - Performance-conscious implementation with minimal re-renders
+  - Accessibility considerations maintained throughout
+
+## Technical Implementation Details
+* **Conflict Resolution Flow**: User Save → Check Network & Server ID → Fetch Server Version → 3-way Merge → Apply Changes → Update SQLite → Redux Update → UI Refresh
+* **Security Validation Flow**: User Delete → UI Ownership Check → Hook Validation → Service Validation → Database Operation → Redux Update
+* **Keyboard Management**: Platform-aware keyboard handling with TouchableWithoutFeedback and KeyboardAvoidingView integration
+* **Cross-Platform Consistency**: iOS and Android optimized behaviors while maintaining unified codebase
 

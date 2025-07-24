@@ -1,5 +1,5 @@
 import React, { useContext, useLayoutEffect } from 'react';
-import { View, Text, SafeAreaView, ActivityIndicator } from 'react-native';
+import { View, Text, SafeAreaView, ActivityIndicator, TouchableWithoutFeedback, Keyboard } from 'react-native';
 import { useSelector } from 'react-redux';
 import { GlobalStyles } from '../styles/GlobalStyles';
 import { AppContext } from '../../application/context/AppContext';
@@ -63,40 +63,42 @@ const HomeScreen = ({ navigation }: any) => {
   }
 
   return (
-    <View style={GlobalStyles(theme).mainContainer}>
-      <View style={[GlobalStyles(theme).container, { width: '90%' }]}>
-        <View style={{ paddingBottom:0}}>
-                      <SearchInput
-              value={searchQuery}
-              onChangeText={handleSearchChange}
-              placeholder="Search notes by title"
-              isFilterActive={isFilterActive}
-              onFilterPress={handleFilterToggle}
+    <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
+      <View style={GlobalStyles(theme).mainContainer}>
+        <View style={[GlobalStyles(theme).container, { width: '90%' }]}>
+          <View style={{ paddingBottom:0}}>
+                        <SearchInput
+                value={searchQuery}
+                onChangeText={handleSearchChange}
+                placeholder="Search notes by title"
+                isFilterActive={isFilterActive}
+                onFilterPress={handleFilterToggle}
+              />
+            <ToggleSwitch
+              leftOption={`All Notes (${notesCount})`}
+              rightOption={`Bookmarks (${bookmarksCount})`}
+              isRightSelected={showBookmarks}
+              onToggle={handleToggleView}
             />
-          <ToggleSwitch
-            leftOption={`All Notes (${notesCount})`}
-            rightOption={`Bookmarks (${bookmarksCount})`}
-            isRightSelected={showBookmarks}
-            onToggle={handleToggleView}
-          />
+          </View>
+          
+          {/* FlashList components handle their own scrolling - no ScrollView wrapper needed */}
+                    {showBookmarks ? (
+              <AllBookmarksComponent 
+                navigation={navigation} 
+                searchQuery={searchQuery} 
+                isFilterActive={isFilterActive}
+              />
+            ) : (
+              <AllNotesComponent 
+                navigation={navigation} 
+                searchQuery={searchQuery} 
+                isFilterActive={isFilterActive}
+              />
+            )}
         </View>
-        
-        {/* FlashList components handle their own scrolling - no ScrollView wrapper needed */}
-                  {showBookmarks ? (
-            <AllBookmarksComponent 
-              navigation={navigation} 
-              searchQuery={searchQuery} 
-              isFilterActive={isFilterActive}
-            />
-          ) : (
-            <AllNotesComponent 
-              navigation={navigation} 
-              searchQuery={searchQuery} 
-              isFilterActive={isFilterActive}
-            />
-          )}
       </View>
-    </View>
+    </TouchableWithoutFeedback>
   );
 };
 

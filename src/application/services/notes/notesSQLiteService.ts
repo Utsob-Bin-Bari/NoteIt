@@ -20,54 +20,91 @@ export const notesSQLiteService = {
   /**
    * Fetch all notes for current user (with bulletproof ID handling)
    * FIXED: Use local_id as primary id when server id is null
+   * FIXED: Search by email in shared_with after auto-recovery converts user IDs to emails
    */
-  fetchAllNotes: async (userId: string): Promise<Note[]> => {
+  fetchAllNotes: async (userId: string, userEmail?: string): Promise<Note[]> => {
     const db = DatabaseInit.getInstance().getDatabase();
     
     return new Promise((resolve, reject) => {
-      db.transaction(tx => {
-        tx.executeSql(
-          `SELECT * FROM notes 
-           WHERE (owner_id = ? OR shared_with LIKE ?) 
-           ORDER BY updated_at DESC`,
-          [userId, `%"${userId}"%`],
-          (_, result) => {
-            const notes: Note[] = [];
-            for (let i = 0; i < result.rows.length; i++) {
-              const row = result.rows.item(i);
-              
-              // BULLETPROOF ID HANDLING: Use local_id if server id is null
-              const primaryId = row.id || row.local_id;
-              
-              // VALIDATION: Skip corrupted notes without valid ID
+      // Helper function to process notes results
+      const processNotesResult = (result: any) => {
+        const notes: Note[] = [];
+        for (let i = 0; i < result.rows.length; i++) {
+          const row = result.rows.item(i);
+          
+          // BULLETPROOF ID HANDLING: Use local_id if server id is null
+          const primaryId = row.id || row.local_id;
+          
+                        // VALIDATION: Skip corrupted notes without valid ID
               if (!primaryId) {
-                console.warn('⚠️ Skipping note without valid ID:', row);
                 continue;
               }
-              
-              // BULLETPROOF NOTE CONSTRUCTION
-              const note: Note = {
-                id: primaryId, // Use server ID or local ID as primary
-                local_id: row.local_id || null,
-                title: row.title || '', // Ensure never null
-                details: row.details || '', // Ensure never null
-                owner_id: row.owner_id || userId, // Fallback to current user
-                shared_with: DatabaseHelpers.parseJsonArray(row.shared_with) || [],
-                bookmarked_by: DatabaseHelpers.parseJsonArray(row.bookmarked_by) || [],
-                created_at: row.created_at || DatabaseHelpers.getCurrentTimestamp(),
-                updated_at: row.updated_at || DatabaseHelpers.getCurrentTimestamp(),
-              };
-              
-              notes.push(note);
+          
+          // BULLETPROOF NOTE CONSTRUCTION
+          const note: Note = {
+            id: primaryId, // Use server ID or local ID as primary
+            local_id: row.local_id || null,
+            title: row.title || '', // Ensure never null
+            details: row.details || '', // Ensure never null
+            owner_id: row.owner_id || userId, // Fallback to current user
+            shared_with: DatabaseHelpers.parseJsonArray(row.shared_with) || [],
+            bookmarked_by: DatabaseHelpers.parseJsonArray(row.bookmarked_by) || [],
+            created_at: row.created_at || DatabaseHelpers.getCurrentTimestamp(),
+            updated_at: row.updated_at || DatabaseHelpers.getCurrentTimestamp(),
+          };
+          
+          notes.push(note);
+        }
+        resolve(notes);
+      };
+
+      db.transaction(tx => {
+        if (userEmail) {
+          // If email is provided, use it directly
+          tx.executeSql(
+            `SELECT * FROM notes 
+             WHERE (owner_id = ? OR shared_with LIKE ?) 
+             ORDER BY updated_at DESC`,
+            [userId, `%"${userEmail}"%`],
+            (_, result) => processNotesResult(result),
+            (_, error) => {
+              console.error('❌ Error fetching notes:', error);
+              reject(error);
+              return false;
             }
-            resolve(notes);
-          },
-          (_, error) => {
-            console.error('❌ Error fetching notes:', error);
-            reject(error);
-            return false;
-          }
-        );
+          );
+        } else {
+          // Get user email from user_session first
+          tx.executeSql(
+            'SELECT email FROM user_session WHERE user_id = ? LIMIT 1',
+            [userId],
+            (_, emailResult) => {
+              let email = userId; // Fallback to userId if email not found
+              if (emailResult.rows.length > 0) {
+                email = emailResult.rows.item(0).email;
+              }
+              
+              // Now fetch notes with proper email search
+              tx.executeSql(
+                `SELECT * FROM notes 
+                 WHERE (owner_id = ? OR shared_with LIKE ?) 
+                 ORDER BY updated_at DESC`,
+                [userId, `%"${email}"%`],
+                (_, result) => processNotesResult(result),
+                (_, error) => {
+                  console.error('❌ Error fetching notes:', error);
+                  reject(error);
+                  return false;
+                }
+              );
+            },
+            (_, error) => {
+              console.error('❌ Error fetching user email:', error);
+              reject(error);
+              return false;
+            }
+          );
+        }
       });
     });
   },

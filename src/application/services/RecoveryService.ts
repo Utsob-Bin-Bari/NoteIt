@@ -4,6 +4,7 @@ import { fetchAllNotes } from '../../infrastructure/api/requests/notes/fetchAllN
 import { getUserData } from '../../infrastructure/api/requests/user/userData';
 import { fetchAllBookmarkedNotes } from '../../infrastructure/api/requests/bookmarks/fetchAllBookmarkedNotes';
 import { getUserSharedNotes } from '../../infrastructure/api/requests/user/userSharedNotes';
+import { fetchAllSharedUsers } from '../../infrastructure/api/requests/notes/fetchAllSharedUsers';
 
 interface RecoveryResult {
   success: boolean;
@@ -23,6 +24,40 @@ interface RecoveryDetection {
 }
 
 export const RecoveryService = {
+  /**
+   * Convert user IDs to emails using the shared users API
+   */
+  convertUserIdsToEmails: async (noteId: string, userIds: string[], accessToken: string): Promise<string[]> => {
+    try {
+      if (!userIds || userIds.length === 0) {
+        return [];
+      }
+
+      // Fetch shared users for this note to get email mappings
+      const sharedUsersResponse = await fetchAllSharedUsers({ noteId, accessToken });
+      
+      if (!sharedUsersResponse.users || sharedUsersResponse.users.length === 0) {
+        return [];
+      }
+
+      // Create a mapping of user ID to email
+      const userIdToEmailMap = new Map<string, string>();
+      sharedUsersResponse.users.forEach(user => {
+        userIdToEmailMap.set(user.id, user.email);
+      });
+
+      // Convert user IDs to emails
+      const emails = userIds
+        .map(userId => userIdToEmailMap.get(userId))
+        .filter((email): email is string => !!email); // Remove undefined values
+
+      return emails;
+    } catch (error) {
+      console.error(`❌ Failed to convert user IDs to emails for note ${noteId}:`, error);
+      return []; // Return empty array on error
+    }
+  },
+
   /**
    * Detect if recovery is needed
    */
@@ -130,13 +165,23 @@ export const RecoveryService = {
       
       if (backendNotes.notes && backendNotes.notes.length > 0) {
         for (const note of backendNotes.notes) {
+          // Convert shared_with user IDs to emails before storing
+          let sharedWithEmails: string[] = [];
+          if (note.shared_with && note.shared_with.length > 0) {
+            sharedWithEmails = await RecoveryService.convertUserIdsToEmails(
+              note.id, 
+              note.shared_with, 
+              accessToken
+            );
+          }
+
           await db.executeSql(
             `INSERT OR REPLACE INTO notes 
              (id, title, details, owner_id, shared_with, bookmarked_by, created_at, updated_at, sync_status, is_deleted, needs_sync) 
              VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'synced', 0, 0)`,
             [
               note.id, note.title, note.details, note.owner_id,
-              JSON.stringify(note.shared_with || []),
+              JSON.stringify(sharedWithEmails), // Store emails instead of user IDs
               JSON.stringify(note.bookmarked_by || []),
               note.created_at, note.updated_at
             ]
@@ -152,13 +197,23 @@ export const RecoveryService = {
         
         if (sharedNotes.notes && sharedNotes.notes.length > 0) {
           for (const note of sharedNotes.notes) {
+            // Convert shared_with user IDs to emails before storing
+            let sharedWithEmails: string[] = [];
+            if (note.shared_with && note.shared_with.length > 0) {
+              sharedWithEmails = await RecoveryService.convertUserIdsToEmails(
+                note.id, 
+                note.shared_with, 
+                accessToken
+              );
+            }
+
             await db.executeSql(
               `INSERT OR REPLACE INTO notes 
                (id, title, details, owner_id, shared_with, bookmarked_by, created_at, updated_at, sync_status, is_deleted, needs_sync) 
                VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'synced', 0, 0)`,
               [
                 note.id, note.title, note.details, note.owner_id,
-                JSON.stringify(note.shared_with || []),
+                JSON.stringify(sharedWithEmails), // Store emails instead of user IDs
                 JSON.stringify(note.bookmarked_by || []),
                 note.created_at, note.updated_at
               ]
@@ -176,13 +231,23 @@ export const RecoveryService = {
         
         if (bookmarkedNotes.notes && bookmarkedNotes.notes.length > 0) {
           for (const note of bookmarkedNotes.notes) {
+            // Convert shared_with user IDs to emails before storing
+            let sharedWithEmails: string[] = [];
+            if (note.shared_with && note.shared_with.length > 0) {
+              sharedWithEmails = await RecoveryService.convertUserIdsToEmails(
+                note.id, 
+                note.shared_with, 
+                accessToken
+              );
+            }
+
             await db.executeSql(
               `INSERT OR REPLACE INTO notes 
                (id, title, details, owner_id, shared_with, bookmarked_by, created_at, updated_at, sync_status, is_deleted, needs_sync) 
                VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'synced', 0, 0)`,
               [
                 note.id, note.title, note.details, note.owner_id,
-                JSON.stringify(note.shared_with || []),
+                JSON.stringify(sharedWithEmails), // Store emails instead of user IDs
                 JSON.stringify(note.bookmarked_by || []),
                 note.created_at, note.updated_at
               ]

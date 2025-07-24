@@ -1,6 +1,6 @@
 import { bookmarksSQLiteService } from './bookmarksSQLiteService';
-// 🚨 DISABLED: Auto-sync functionality removed
-// import { syncQueueService } from '../notes/syncQueueService';
+import { syncQueueService } from '../notes/syncQueueService';
+import { notesSQLiteService } from '../notes/notesSQLiteService';
 import { fetchAllBookmarkedNotes } from '../../../infrastructure/api/requests/bookmarks/fetchAllBookmarkedNotes';
 import { createBookmark } from '../../../infrastructure/api/requests/bookmarks/createBookmark';
 import { deleteBookmark } from '../../../infrastructure/api/requests/bookmarks/deleteBookmark';
@@ -10,7 +10,7 @@ import { Note } from '../../../domain/types/store/NotesState';
 
 /**
  * Business logic service for bookmarks management
- * 🚨 DISABLED: Auto-sync functionality removed - operating in local-only mode
+ * ✅ ENABLED: Auto-sync functionality active with proper local_id to server_id mapping
  */
 export const bookmarksService = {
   /**
@@ -27,15 +27,10 @@ export const bookmarksService = {
   },
 
   /**
-   * Refresh bookmarks from server MANUALLY (DISABLED - returns local data only)
-   * 🚨 DISABLED: Server sync functionality removed
+   * Refresh bookmarks from server with sync
+   * ✅ ENABLED: Fetches server bookmarks and stores locally
    */
   refreshBookmarks: async (accessToken: string, userId: string): Promise<Note[]> => {
-    // 🚨 DISABLED: Server sync functionality removed for local-only operation
-    return await bookmarksService.loadBookmarksFromLocal(userId);
-    
-    /*
-    // TODO: Uncomment for future server sync implementation
     try {
       const response = await fetchAllBookmarkedNotes({ accessToken });
       
@@ -47,22 +42,21 @@ export const bookmarksService = {
               local_id: null
             });
           } catch (error) {
-            console.warn('Could not update bookmark for note:', serverNote.id);
+            // Continue with other notes if one fails
           }
         }
       }
       
       return await bookmarksService.loadBookmarksFromLocal(userId);
     } catch (error) {
-      console.error('Error fetching bookmarks from server:', error);
-      throw error;
+      // Fallback to local data
+      return await bookmarksService.loadBookmarksFromLocal(userId);
     }
-    */
   },
 
   /**
-   * Add bookmark (LOCAL ONLY - no sync)
-   * 🚨 DISABLED: Auto-sync functionality removed
+   * Add bookmark with auto-sync
+   * ✅ ENABLED: Adds locally and queues for sync
    */
   addBookmark: async (
     noteId: string,
@@ -72,13 +66,14 @@ export const bookmarksService = {
     try {
       await bookmarksSQLiteService.addBookmark(noteId, userId);
       
-      /*
-      // TODO: Uncomment for future auto-sync implementation
-      const queueId = await syncQueueService.addToQueue(
-        OPERATION_TYPES.CREATE,
-        ENTITY_TYPES.BOOKMARK,
+      await syncQueueService.addToQueue(
+        OPERATION_TYPES.BOOKMARK,
+        ENTITY_TYPES.NOTE,
         noteId,
-        { userId }
+        { 
+          userId: userId,
+          noteId: noteId
+        }
       );
       
       if (accessToken) {
@@ -88,17 +83,15 @@ export const bookmarksService = {
           // Auto-sync failed, will retry later
         }
       }
-      */
       
     } catch (error) {
-      console.error('Error adding bookmark:', error);
       throw error;
     }
   },
 
   /**
-   * Remove bookmark (LOCAL ONLY - no sync)
-   * 🚨 DISABLED: Auto-sync functionality removed
+   * Remove bookmark with auto-sync
+   * ✅ ENABLED: Removes locally and queues for sync
    */
   removeBookmark: async (
     noteId: string,
@@ -108,13 +101,14 @@ export const bookmarksService = {
     try {
       await bookmarksSQLiteService.removeBookmark(noteId, userId);
       
-      /*
-      // TODO: Uncomment for future auto-sync implementation
-      const queueId = await syncQueueService.addToQueue(
-        OPERATION_TYPES.DELETE,
-        ENTITY_TYPES.BOOKMARK,
+      await syncQueueService.addToQueue(
+        OPERATION_TYPES.UNBOOKMARK,
+        ENTITY_TYPES.NOTE,
         noteId,
-        { userId }
+        { 
+          userId: userId,
+          noteId: noteId
+        }
       );
       
       if (accessToken) {
@@ -124,10 +118,8 @@ export const bookmarksService = {
           // Auto-sync failed, will retry later
         }
       }
-      */
       
     } catch (error) {
-      console.error('Error removing bookmark:', error);
       throw error;
     }
   },
@@ -171,30 +163,39 @@ export const bookmarksService = {
   },
 
   /**
-   * Try to sync a specific bookmark operation (DISABLED)
-   * 🚨 DISABLED: Sync functionality removed
+   * Try to sync a specific bookmark operation
+   * ✅ ENABLED: Syncs bookmark operations with proper local_id to server_id handling
    */
   trySyncBookmarkOperation: async (noteId: string, accessToken: string): Promise<boolean> => {
-    // 🚨 DISABLED: Sync functionality removed for local-only operation
-    return true;
-    
-    /*
-    // TODO: Uncomment for future sync implementation
     try {
       const pendingOperations = await syncQueueService.getPendingOperations();
       const operation = pendingOperations.find(
-        op => op.entity_id === noteId && op.entity_type === ENTITY_TYPES.BOOKMARK
+        op => op.entity_id === noteId && op.entity_type === ENTITY_TYPES.NOTE && 
+        (op.operation_type === OPERATION_TYPES.BOOKMARK || op.operation_type === OPERATION_TYPES.UNBOOKMARK)
       );
       
       if (!operation) return true; // Already synced
       
+      // Check if we need to convert local_id to server_id
+      let serverNoteId = noteId;
+      if (noteId.startsWith('local_')) {
+        // Find server_id from local_id in notes table
+        const notes = await notesSQLiteService.fetchAllNotes(''); // Get all notes to find by local_id
+        const note = notes.find(n => n.local_id === noteId);
+        if (!note || !note.id || note.id.startsWith('local_')) {
+          // Server ID not available yet, skip sync
+          return false;
+        }
+        serverNoteId = note.id;
+      }
+      
       let success = false;
       
-      if (operation.operation_type === OPERATION_TYPES.CREATE) {
-        await createBookmark({ noteId, accessToken });
+      if (operation.operation_type === OPERATION_TYPES.BOOKMARK) {
+        await createBookmark({ noteId: serverNoteId, accessToken });
         success = true;
-      } else if (operation.operation_type === OPERATION_TYPES.DELETE) {
-        await deleteBookmark({ noteId, accessToken });
+      } else if (operation.operation_type === OPERATION_TYPES.UNBOOKMARK) {
+        await deleteBookmark({ noteId: serverNoteId, accessToken });
         success = true;
       }
       
@@ -205,10 +206,8 @@ export const bookmarksService = {
       
       return success;
     } catch (error) {
-      console.error('Error syncing bookmark operation:', error);
       return false;
     }
-    */
   },
 
   /**

@@ -1,5 +1,6 @@
 export interface GetAllNotesResponse {
   notes: {
+    _id: string;
     id: string;
     title: string;
     details: string;
@@ -13,7 +14,8 @@ export interface GetAllNotesResponse {
 
 export interface GetNoteByIdResponse {
   note: {
-    id: string;
+    _id: string;//both are same server id
+    id: string;//both are same server id
     title: string;
     details: string;
     owner_id: string;

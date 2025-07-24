@@ -86,17 +86,31 @@ export const useNoteEditor = () => {
 
     try {
       
-      // CALL NEW SERVICE METHOD WITH DISPATCH - Our agreed plan
+      // CALL NEW SERVICE METHOD WITH DISPATCH AND CONFLICT RESOLUTION
       const result = await noteEditorService.saveNote(
         noteId || null,
         title,
         details,
         authState.id,
         authState.accessToken,
-        dispatch // Pass dispatch for Redux updates
+        dispatch, // Pass dispatch for Redux updates
+        noteId ? { title: originalTitle, details: originalDetails } : undefined // Original note for conflict resolution
       );
 
       if (result.success) {
+        
+        // Handle conflict resolution feedback
+        if (result.conflictInfo?.hasConflicts) {
+          // Show user that conflicts were resolved
+          Alert.alert(
+            'Conflicts Resolved',
+            `Your changes have been merged with server updates:\n\n${result.conflictInfo.conflictDetails.join('\n')}`,
+            [{ text: 'OK' }]
+          );
+        } else if (result.conflictInfo?.conflictDetails && result.conflictInfo.conflictDetails.length > 0) {
+          // Show successful merge information (non-intrusive)
+          console.error('Note synchronized successfully:', result.conflictInfo.conflictDetails);
+        }
         
         // Note: Redux is already updated by the service, no need for additional refresh
         
@@ -142,6 +156,7 @@ export const useNoteEditor = () => {
           { 
             text: 'Save', 
             onPress: async () => {
+              // Save with conflict resolution on back button
               const saved = await handleSave();
               if (saved) {
                 navigation.goBack();

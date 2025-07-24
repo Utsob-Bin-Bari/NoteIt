@@ -1,17 +1,17 @@
 import { notesSQLiteService } from './notesSQLiteService';
-// 🚨 DISABLED: Auto-sync functionality removed
-// import { syncQueueService } from './syncQueueService';
+import { syncQueueService } from './syncQueueService';
 import { fetchAllNotes } from '../../../infrastructure/api/requests/notes/fetchAllNotes';
 import { createNewNote } from '../../../infrastructure/api/requests/notes/createNewNote';
 import { updateNoteById } from '../../../infrastructure/api/requests/notes/updateNoteById';
 import { deleteNoteById } from '../../../infrastructure/api/requests/notes/deleteNoteById';
+import { shareNoteByEmail } from '../../../infrastructure/api/requests/notes/shareNoteByEmail';
 import { NetworkService } from '../../../infrastructure/utils/NetworkService';
 import { OPERATION_TYPES, ENTITY_TYPES } from '../../../infrastructure/storage/DatabaseSchema';
 import { Note } from '../../../domain/types/store/NotesState';
 
 /**
  * Business logic service for notes management
- * 🚨 DISABLED: Auto-sync functionality removed - operating in local-only mode
+ * ✅ ENABLED: Auto-sync functionality active with proper local_id to server_id mapping
  */
 export const notesService = {
   /**
@@ -29,22 +29,15 @@ export const notesService = {
   },
 
   /**
-   * Fetch notes from server MANUALLY ONLY (no auto-calls)
-   * 🚨 DISABLED: Server requests commented out for local-only operation
+   * Fetch notes from server manually and sync to local database
+   * ✅ ENABLED: Fetches server notes and stores locally
    */
   fetchNotesFromServerManually: async (accessToken: string, userId: string): Promise<Note[]> => {
-    // 🚨 DISABLED: Server requests commented out for local-only operation
-    return await notesService.loadNotesFromLocal(userId);
-    
-    /*
-    // TODO: Uncomment for future server sync implementation
     try {
-      
       const response = await fetchAllNotes({ accessToken });
       
       // Save server notes to local database
       if (response.notes && response.notes.length > 0) {
-        
         for (const serverNote of response.notes) {
           // Add local_id as null for server notes to match Note interface
           const noteWithLocalId: Note = {
@@ -57,18 +50,16 @@ export const notesService = {
       
       // Return fresh data from local database
       const finalNotes = await notesSQLiteService.fetchAllNotes(userId);
-      
       return finalNotes;
     } catch (error) {
-      console.error('❌ Error fetching notes from BACKEND SERVER (manual):', error);
-      throw error;
+      // Fallback to local data on error
+      return await notesService.loadNotesFromLocal(userId);
     }
-    */
   },
 
   /**
-   * Create new note (LOCAL ONLY - no sync)
-   * 🚨 DISABLED: Auto-sync functionality removed
+   * Create new note with auto-sync
+   * ✅ ENABLED: Creates locally and queues for sync
    */
   createNote: async (
     noteData: { title: string; details: string },
@@ -79,14 +70,16 @@ export const notesService = {
       // 1. Create in local database with null server ID and local ID for correlation
       const localId = await notesSQLiteService.createNote(noteData, userId);
       
-      /*
-      // TODO: Uncomment for future auto-sync implementation
       // 2. Add to sync queue for auto-sync with local ID correlation
-      const queueId = await syncQueueService.addToQueue(
+      await syncQueueService.addToQueue(
         OPERATION_TYPES.CREATE,
         ENTITY_TYPES.NOTE,
         localId, // Use local ID as entity_id for correlation
-        noteData
+        {
+          ...noteData,
+          localId: localId, // Store local ID for correlation
+          userId: userId
+        }
       );
       
       // 3. Trigger immediate auto-sync if online and have access token
@@ -97,18 +90,16 @@ export const notesService = {
           // Auto-sync failed, will retry later
         }
       }
-      */
       
       return localId; // Return local ID for correlation
     } catch (error) {
-      console.error('❌ Error creating note:', error);
       throw error;
     }
   },
 
   /**
-   * Update existing note (LOCAL ONLY - no sync)
-   * 🚨 DISABLED: Auto-sync functionality removed
+   * Update existing note with auto-sync
+   * ✅ ENABLED: Updates locally and queues for sync
    */
   updateNote: async (
     noteId: string,
@@ -117,18 +108,19 @@ export const notesService = {
     accessToken?: string
   ): Promise<void> => {
     try {
-      // 1. Update in local database only
+      // 1. Update in local database
       await notesSQLiteService.updateNote(noteId, noteData, userId);
       
-      /*
-      // TODO: Uncomment for future auto-sync implementation
       // 2. Add to sync queue for auto-sync
       // Note: For UPDATE operations, we use the current note ID (could be local or server ID)
-      const queueId = await syncQueueService.addToQueue(
+      await syncQueueService.addToQueue(
         OPERATION_TYPES.UPDATE,
         ENTITY_TYPES.NOTE,
         noteId, // Use current note ID (local or server)
-        noteData
+        {
+          ...noteData,
+          userId: userId
+        }
       );
       
       // 3. Trigger immediate auto-sync if online and have access token
@@ -139,84 +131,54 @@ export const notesService = {
           // Auto-sync failed, will retry later
         }
       }
-      */
       
     } catch (error) {
-      console.error('❌ Error updating note:', error);
       throw error;
     }
   },
 
   /**
-   * Manual refresh (returns local data only)
-   * 🚨 DISABLED: Server sync functionality removed
+   * Manual refresh with full sync
+   * ✅ ENABLED: Syncs pending changes and fetches server data
    */
   manualRefreshNotes: async (accessToken: string, userId: string): Promise<Note[]> => {
-    // 🚨 DISABLED: Server sync functionality removed for local-only operation
-    return await notesService.loadNotesFromLocal(userId);
-    
-    /*
-    // TODO: Uncomment for future server sync implementation
     try {
-      
       // 1. Sync pending local changes first
       await notesService.manualSyncAllPending(accessToken);
       
       // 2. Fetch fresh data from server
       return await notesService.fetchNotesFromServerManually(accessToken, userId);
     } catch (error) {
-      console.error('❌ Error in manual refresh:', error);
       // Fallback to local data
       return await notesService.loadNotesFromLocal(userId);
     }
-    */
   },
 
   /**
-   * Manual sync all pending operations (DISABLED - returns mock data)
-   * 🚨 DISABLED: Sync functionality removed
+   * Manually sync all pending operations
+   * ✅ ENABLED: Processes all pending sync operations
    */
-  manualSyncAllPending: async (accessToken: string): Promise<{synced: number, failed: number}> => {
-    // 🚨 DISABLED: Sync functionality removed for local-only operation
-    return { synced: 0, failed: 0 };
-    
-    /*
-    // TODO: Uncomment for future sync implementation
-    
-    const pendingOperations = await syncQueueService.getPendingOperations();
-    let synced = 0;
-    let failed = 0;
-    
-    
-    for (const operation of pendingOperations) {
-      try {
-        const success = await notesService.trySyncOperation(operation.entity_id, accessToken);
-        if (success) {
-          synced++;
-        } else {
-          failed++;
-          await syncQueueService.incrementRetryCount(operation.id);
+  manualSyncAllPending: async (accessToken: string): Promise<void> => {
+    try {
+      const pendingOperations = await syncQueueService.getPendingOperations();
+      
+      for (const operation of pendingOperations) {
+        try {
+          await notesService.trySyncOperation(operation.entity_id, accessToken);
+        } catch (error) {
+          // Continue with next operation if one fails
         }
-      } catch (error) {
-        failed++;
-        await syncQueueService.incrementRetryCount(operation.id);
       }
+    } catch (error) {
+      // Silent failure - sync will retry later
     }
-    
-    return { synced, failed };
-    */
   },
 
   /**
-   * Try to sync a specific operation (DISABLED)
-   * 🚨 DISABLED: Sync functionality removed
+   * Try to sync a specific operation
+   * ✅ ENABLED: Syncs individual operations with proper error handling
    */
   trySyncOperation: async (noteId: string, accessToken: string): Promise<boolean> => {
-    // 🚨 DISABLED: Sync functionality removed for local-only operation
-    return true;
-    
-    /*
-    // TODO: Uncomment for future sync implementation
     let operation: any = null;
     
     try {
@@ -323,19 +285,31 @@ export const notesService = {
             await deleteNoteById({ noteId: deleteNoteId, accessToken });
             success = true;
             break;
+            
+          case OPERATION_TYPES.SHARE:
+            const sharePayload = JSON.parse(operation.payload || '{}');
+            
+            // For SHARE operations, the entity_id could be local ID or server ID
+            let shareNoteId = operation.entity_id;
+            
+            // Check if this is a local ID that needs to be converted to server ID
+            if (shareNoteId.startsWith('local_')) {
+              // This is an edge case - local ID for SHARE without CREATE being processed
+              // We should skip this operation until CREATE is processed
+              return false;
+            }
+            
+            await shareNoteByEmail({
+              noteId: shareNoteId,
+              requestBody: {
+                email: sharePayload.email,
+              },
+              accessToken
+            });
+            success = true;
+            break;
         }
       } catch (apiError: any) {
-          noteId,
-          operation_type: operation.operation_type,
-          error_details: {
-            status: apiError.status,
-            response_status: apiError.response?.status,
-            message: apiError.message,
-            response_data: apiError.response?.data,
-            full_error: apiError
-          }
-        });
-        
         // Enhanced 404 error detection - handle multiple error formats
         const is404Error = (
           apiError.response?.status === 404 ||           // Standard axios error format
@@ -348,11 +322,6 @@ export const notesService = {
           (apiError.response?.data?.errors?.message && 
            apiError.response.data.errors.message.includes('Note not found'))
         );
-        
-          is404Error,
-          operation_type: operation.operation_type,
-          noteId
-        });
         
         if (operation.operation_type === OPERATION_TYPES.DELETE && is404Error) {
           success = true; // Treat as successful since note doesn't exist anyway
@@ -373,8 +342,6 @@ export const notesService = {
           } catch (markSyncError) {
             // This is not critical - the operation was successful on server
           }
-        } else if (operation.operation_type === OPERATION_TYPES.CREATE) {
-        } else if (operation.operation_type === OPERATION_TYPES.DELETE) {
         }
       }
       
@@ -388,7 +355,6 @@ export const notesService = {
       });
       return false;
     }
-    */
   },
 
   /**

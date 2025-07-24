@@ -1,5 +1,5 @@
 import React, { useContext } from 'react';
-import { View, TextInput, TouchableOpacity } from 'react-native';
+import { View, TextInput, TouchableOpacity, Keyboard } from 'react-native';
 import { AppContext } from '../../application/context/AppContext';
 import { ThemeType } from '../../domain/types/theme/theme';
 import { getColors } from '../constants/Colors';
@@ -64,6 +64,8 @@ const SearchInput: React.FC<SearchInputProps> = ({
         placeholderTextColor={colors.placeholder}
         selectionColor={colors.primary}
         returnKeyType="search"
+        onSubmitEditing={Keyboard.dismiss}
+        blurOnSubmit={true}
       />
       
       {/* Filter Icon - Right Side */}

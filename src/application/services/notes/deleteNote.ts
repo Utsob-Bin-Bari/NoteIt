@@ -5,6 +5,7 @@ import { deleteNote as deleteNoteAction } from '../../store/action/notes/deleteN
 import { setAllNotes } from '../../store/action/notes/setAllNotes';
 import { deleteNoteById } from '../../../infrastructure/api/requests/notes/deleteNoteById';
 import { NetworkService } from '../../../infrastructure/utils/NetworkService';
+import { validateNoteOwnershipById } from '../../../domain/validators/noteOwnershipValidator';
 import { Dispatch } from 'redux';
 
 /**
@@ -19,6 +20,18 @@ export const deleteNote = async (
 ): Promise<{ success: boolean; error?: string }> => {
 
   try {
+    // Step 1: Validate note ownership before deletion
+    const allNotes = await notesSQLiteService.fetchAllNotes(userId);
+    const ownershipValidation = validateNoteOwnershipById(noteId, userId, allNotes);
+    
+    if (!ownershipValidation.isOwner) {
+      return {
+        success: false,
+        error: ownershipValidation.error || 'Only owner can delete the note'
+      };
+    }
+
+    // Step 2: Proceed with deletion if ownership is validated
     await notesSQLiteService.deleteNote(noteId);
 
     const queueId = await syncQueueService.addToQueue(

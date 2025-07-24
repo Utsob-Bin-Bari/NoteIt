@@ -11,6 +11,7 @@ import SharedUsersDisplay from './SharedUsersDisplay';
 import ShareInput from './ShareInput';
 import { useSelector, useDispatch } from 'react-redux';
 import { RootState } from '../../domain/types/store/RootState';
+import { validateNoteOwnership } from '../../domain/validators/noteOwnershipValidator';
 
 interface AllNotesComponentProps {
   navigation: any;
@@ -134,13 +135,14 @@ const NoteItem: React.FC<NoteItemProps> = React.memo(({
               </TouchableOpacity>
             )}
             
-            {/* OPTIMISTIC BOOKMARK BUTTON - No loading states, no border */}
+            {/* BOOKMARK BUTTON - Shows status, only allows adding bookmarks */}
             <TouchableOpacity
               onPress={onBookmark}
               style={{
-                backgroundColor: isBookmarked ? colors.warning + '20' : colors.secondary,
+                backgroundColor: colors.secondary,
                 borderRadius: 8,
                 padding: 8,
+                opacity: isBookmarked ? 1 : 1,
               }}
             >
               <BookmarkIcon 
@@ -235,6 +237,9 @@ const AllNotesComponent: React.FC<AllNotesComponentProps> = ({
   
   // State for tracking which note's share input is visible
   const [visibleShareInput, setVisibleShareInput] = useState<Set<string>>(new Set());
+  
+  // State for optimistic bookmark updates
+  const [optimisticBookmarks, setOptimisticBookmarks] = useState<Set<string>>(new Set());
 
   // Filter notes based on search query and filter status
   const filteredNotes = useMemo(() => {
@@ -257,9 +262,14 @@ const AllNotesComponent: React.FC<AllNotesComponentProps> = ({
     return result;
   }, [notes, searchQuery, isFilterActive, currentUserId]);
 
-  // Enhanced bookmark state checker that examines the bookmarked_by array
+  // Enhanced bookmark state checker with optimistic updates
   const isBookmarkedSync = React.useCallback((noteId: string): boolean => {
     if (!currentUserId) return false;
+    
+    // Check optimistic state first
+    if (optimisticBookmarks.has(noteId)) {
+      return true;
+    }
     
     // Check if this note is in the bookmarked notes by examining the bookmarked_by array
     const note = notes.find(n => n.id === noteId);
@@ -269,42 +279,72 @@ const AllNotesComponent: React.FC<AllNotesComponentProps> = ({
     
     const isBookmarked = note.bookmarked_by.includes(currentUserId);
     return isBookmarked;
-  }, [notes, currentUserId]);
+  }, [notes, currentUserId, optimisticBookmarks]);
 
   /**
-   * Handle bookmark toggle with optimistic UI feedback
+   * Handle bookmark action with optimistic UI updates - only allows adding bookmarks
    */
   const handleBookmark = React.useCallback(async (note: any) => {
     const noteId = note.id;
     const noteTitle = note.title?.trim() || 'Untitled Note';
-    const isCurrentlyBookmarked = isBookmarkedSync(noteId);
     
+    // Check actual bookmark state (excluding optimistic updates)
+    const note_data = notes.find(n => n.id === noteId);
+    const isActuallyBookmarked = note_data?.bookmarked_by?.includes(currentUserId || '') || false;
+    
+    // Prevent unbookmarking from AllNotes page
+    if (isActuallyBookmarked || optimisticBookmarks.has(noteId)) {
+      Alert.alert(
+        'Remove Bookmark',
+        'To remove this bookmark, please go to your Bookmarks page.',
+        [{ text: 'OK' }]
+      );
+      return;
+    }
+    
+    // Optimistic UI update - immediately show as bookmarked
+    setOptimisticBookmarks(prev => new Set(prev).add(noteId));
+    
+    // Perform actual bookmark operation in background
     try {
       const result = await handleBookmarkToggle(noteId);
       
       if (result.success) {
-        // Bookmark operation completed successfully
-        
+        // Remove from optimistic state - real state will be updated via Redux
+        setOptimisticBookmarks(prev => {
+          const newSet = new Set(prev);
+          newSet.delete(noteId);
+          return newSet;
+        });
       } else {
-        console.error('❌ Bookmark operation failed (UI will auto-revert):', result.error);
+        // Failed - revert optimistic update
+        setOptimisticBookmarks(prev => {
+          const newSet = new Set(prev);
+          newSet.delete(noteId);
+          return newSet;
+        });
         
-        // Optional: Show user feedback for persistent failures
-        const action = isCurrentlyBookmarked ? 'remove from' : 'add to';
         Alert.alert(
           'Bookmark Failed',
-          result.error || `Failed to ${action} bookmarks. The change has been reverted.`,
+          result.error || 'Failed to add to bookmarks. Please try again.',
           [{ text: 'OK' }]
         );
       }
     } catch (error) {
-      console.error('❌ Unexpected error during bookmark operation:', error);
+      // Error - revert optimistic update
+      setOptimisticBookmarks(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(noteId);
+        return newSet;
+      });
+      
       Alert.alert(
         'Error',
-        'An unexpected error occurred. The bookmark change has been reverted.',
+        'An unexpected error occurred while adding bookmark.',
         [{ text: 'OK' }]
       );
     }
-  }, [handleBookmarkToggle, isBookmarkedSync]);
+  }, [handleBookmarkToggle, notes, currentUserId, optimisticBookmarks]);
 
   /**
    * Handle note press to navigate to editor
@@ -322,7 +362,7 @@ const AllNotesComponent: React.FC<AllNotesComponentProps> = ({
   }, [navigation]);
 
   /**
-   * Handle note deletion with user confirmation
+   * Handle note deletion with user confirmation and ownership validation
    */
   const handleNoteDelete = React.useCallback(async (note: any) => {
     const noteId = note.id || note.local_id;
@@ -330,6 +370,19 @@ const AllNotesComponent: React.FC<AllNotesComponentProps> = ({
     
     if (!noteId) {
       console.error('❌ Cannot delete note - no valid ID');
+      return;
+    }
+
+    // Validate note ownership before showing delete confirmation
+    const currentUserId = authState?.id;
+    const ownershipValidation = validateNoteOwnership(note, currentUserId);
+    
+    if (!ownershipValidation.isOwner) {
+      Alert.alert(
+        'Delete Not Allowed',
+        ownershipValidation.error || 'You can only delete notes that you own.',
+        [{ text: 'OK' }]
+      );
       return;
     }
 
@@ -372,7 +425,7 @@ const AllNotesComponent: React.FC<AllNotesComponentProps> = ({
         },
       ]
     );
-  }, [handleDeleteNote]);
+  }, [handleDeleteNote, authState?.id]);
 
   /**
    * Handle info icon press to toggle shared users visibility
@@ -395,6 +448,16 @@ const AllNotesComponent: React.FC<AllNotesComponentProps> = ({
    * Handle share icon press to toggle share input visibility
    */
   const handleSharePress = useCallback((note: any) => {
+    // Check if current user is the owner of the note
+    if (note.owner_id !== currentUserId) {
+      Alert.alert(
+        'Cannot Share Note',
+        'You have to be the owner to able to share the note.',
+        [{ text: 'OK' }]
+      );
+      return;
+    }
+
     // Use same ID resolution as other functions
     const noteId = note.id || note.local_id;
     setVisibleShareInput(prev => {
@@ -406,7 +469,7 @@ const AllNotesComponent: React.FC<AllNotesComponentProps> = ({
       }
       return newSet;
     });
-  }, []);
+  }, [currentUserId]);
 
   /**
    * Handle note sharing
@@ -418,7 +481,7 @@ const AllNotesComponent: React.FC<AllNotesComponentProps> = ({
       // Import shareNote service
       const { shareNote } = await import('../../application/services/notes/shareNote');
       
-      const result = await shareNote(noteId, email, currentUserId || '', dispatch);
+      const result = await shareNote(noteId, email, currentUserId || '', dispatch, authState?.accessToken);
       
       if (result.success) {
         // Hide share input after successful share
@@ -437,7 +500,7 @@ const AllNotesComponent: React.FC<AllNotesComponentProps> = ({
         error: 'Failed to share note. Please try again.'
       };
     }
-  }, [currentUserId, dispatch]);
+  }, [currentUserId, dispatch, authState?.accessToken]);
 
   // Memoize renderItem to prevent unnecessary re-creations
   const renderItem = useCallback(({ item }: { item: any }) => {
@@ -464,7 +527,7 @@ const AllNotesComponent: React.FC<AllNotesComponentProps> = ({
         theme={theme}
       />
     );
-  }, [colors, theme, deletingNotes, isBookmarkedSync, handleNotePress, handleNoteDelete, handleBookmark, handleInfoPress, handleSharePress, handleShare, visibleSharedUsers, visibleShareInput]);
+  }, [colors, theme, deletingNotes, isBookmarkedSync, handleNotePress, handleNoteDelete, handleBookmark, handleInfoPress, handleSharePress, handleShare, visibleSharedUsers, visibleShareInput, optimisticBookmarks]);
 
   const renderEmptyState = () => (
     <View style={{
@@ -550,6 +613,7 @@ const AllNotesComponent: React.FC<AllNotesComponentProps> = ({
         estimatedItemSize={120} // Increased for better estimation with date
         keyExtractor={(item) => item.id}
         showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
         refreshControl={
           <RefreshControl
             refreshing={isRefreshing}
@@ -562,8 +626,8 @@ const AllNotesComponent: React.FC<AllNotesComponentProps> = ({
         // Performance optimizations for large datasets
         removeClippedSubviews={true}
         getItemType={() => 'note'} // Single item type for better performance
-        // Force re-render when theme or visible state changes
-        extraData={{ theme, visibleSharedUsers: visibleSharedUsers.size, visibleShareInput: visibleShareInput.size }}
+        // Force re-render when theme, visible state, or optimistic bookmarks change
+        extraData={{ theme, visibleSharedUsers: visibleSharedUsers.size, visibleShareInput: visibleShareInput.size, optimisticBookmarks: optimisticBookmarks.size }}
       />
       
       {error && (

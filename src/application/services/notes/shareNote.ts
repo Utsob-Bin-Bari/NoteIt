@@ -70,7 +70,7 @@ export const shareNote = async (
 
     // Step 3: Add to sync queue for later API call
     await syncQueueService.addToQueue(
-      OPERATION_TYPES.SHARE, // Assuming this exists or we'll add it
+      OPERATION_TYPES.SHARE,
       ENTITY_TYPES.NOTE,
       noteId,
       {
@@ -80,7 +80,18 @@ export const shareNote = async (
       }
     );
 
-    // Step 4: Update Redux with fresh data from SQLite  
+    // Step 4: Try immediate sync if access token is available
+    if (accessToken) {
+      try {
+        // Import notes service for immediate sync attempt
+        const { notesService } = await import('./notesService');
+        await notesService.trySyncOperation(noteId, accessToken);
+      } catch (syncError) {
+        // Auto-sync failed, will retry later via sync processor
+      }
+    }
+
+    // Step 5: Update Redux with fresh data from SQLite  
     if (dispatch) {
       const freshNotes = await notesSQLiteService.fetchAllNotes(userId);
       dispatch(setAllNotes(freshNotes));

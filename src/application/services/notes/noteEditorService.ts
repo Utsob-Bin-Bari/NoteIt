@@ -1,5 +1,6 @@
 import { notesService } from './notesService';
 import { notesSQLiteService } from './notesSQLiteService';
+import { conflictResolutionService } from './conflictResolutionService';
 import { syncQueueService } from './syncQueueService';
 import { OPERATION_TYPES, ENTITY_TYPES } from '../../../infrastructure/storage/DatabaseSchema';
 import { Note } from '../../../domain/types/store/NotesState';
@@ -11,12 +12,16 @@ import { Dispatch } from 'redux';
  */
 export const noteEditorService = {
   /**
-   * Load a specific note by ID
+   * Load a specific note by ID (supports both server ID and local ID)
    */
   loadNoteById: async (noteId: string, userId: string): Promise<Note | null> => {
     try {
       const notes = await notesSQLiteService.fetchAllNotes(userId);
-      return notes.find(note => note.id === noteId) || null;
+      
+      // Search by both id and local_id to handle all cases
+      const foundNote = notes.find(note => note.id === noteId || note.local_id === noteId);
+      
+      return foundNote || null;
     } catch (error) {
       console.error('Error loading note by ID:', error);
       return null;
@@ -49,8 +54,8 @@ export const noteEditorService = {
   },
 
   /**
-   * SAVE NOTE - Following our agreed plan
-   * User Action → SQLite Database → Query Table → Redux Update → UI Refresh
+   * SAVE NOTE - Following our agreed plan with conflict resolution
+   * User Action → Conflict Resolution → SQLite Database → Query Table → Redux Update → UI Refresh
    */
   saveNote: async (
     noteId: string | null,
@@ -58,8 +63,14 @@ export const noteEditorService = {
     details: string,
     userId: string,
     accessToken?: string,
-    dispatch?: Dispatch
-  ): Promise<{ success: boolean; noteId?: string; error?: string }> => {
+    dispatch?: Dispatch,
+    originalNote?: { title: string; details: string }
+  ): Promise<{ 
+    success: boolean; 
+    noteId?: string; 
+    error?: string;
+    conflictInfo?: { hasConflicts: boolean; conflictDetails: string[] };
+  }> => {
     try {
 
       // Step 1: Validate note data
@@ -77,18 +88,37 @@ export const noteEditorService = {
       };
 
       let resultNoteId: string;
+      let conflictInfo: { hasConflicts: boolean; conflictDetails: string[] } | undefined;
 
       if (noteId) {
-        // UPDATE existing note - same pattern as create
-        await noteEditorService.updateNoteWithRedux(noteId, noteData, userId, accessToken, dispatch);
+        // UPDATE existing note with conflict resolution
+        const updateResult = await noteEditorService.updateNoteWithRedux(
+          noteId, 
+          noteData, 
+          userId, 
+          accessToken, 
+          dispatch,
+          originalNote
+        );
+        
+        if (!updateResult.success) {
+          return {
+            success: false,
+            error: updateResult.error || 'Failed to update note'
+          };
+        }
+        
         resultNoteId = noteId;
+        conflictInfo = updateResult.conflictInfo;
       } else {
         // CREATE new note - follow our agreed plan
         resultNoteId = await noteEditorService.createNoteWithRedux(noteData, userId, accessToken, dispatch);
       }
+      
       return {
         success: true,
-        noteId: resultNoteId
+        noteId: resultNoteId,
+        conflictInfo
       };
     } catch (error) {
       console.error('❌ Error saving note:', error);
@@ -140,31 +170,66 @@ export const noteEditorService = {
   },
 
   /**
-   * UPDATE NOTE - Our agreed plan implementation
-   * User Action → SQLite Database → Query Table → Redux Update → UI Refresh
+   * UPDATE NOTE - Our agreed plan implementation with conflict resolution
+   * User Action → Conflict Resolution → SQLite Database → Query Table → Redux Update → UI Refresh
    */
   updateNoteWithRedux: async (
     noteId: string,
     noteData: { title: string; details: string },
     userId: string,
     accessToken?: string,
-    dispatch?: Dispatch
-  ): Promise<void> => {
+    dispatch?: Dispatch,
+    originalNote?: { title: string; details: string }
+  ): Promise<{
+    success: boolean;
+    conflictInfo?: { hasConflicts: boolean; conflictDetails: string[] };
+    error?: string;
+  }> => {
     
     try {
+      let finalNoteData = noteData;
+      let conflictInfo: { hasConflicts: boolean; conflictDetails: string[] } | undefined;
 
-      await notesSQLiteService.updateNote(noteId, noteData, userId);
+      // Step 1: Perform conflict resolution if conditions are met
+      if (accessToken && originalNote) {
+        const resolutionResult = await conflictResolutionService.performConflictResolution(
+          noteId,
+          noteData,
+          originalNote,
+          accessToken
+        );
+
+        if (resolutionResult.needsResolution) {
+          if (resolutionResult.resolvedData) {
+            finalNoteData = resolutionResult.resolvedData;
+            conflictInfo = resolutionResult.conflictInfo;
+            
+            // Log conflict resolution details [[memory:4007386]]
+            if (conflictInfo?.hasConflicts) {
+              console.error('Conflict resolved for note:', noteId, conflictInfo.conflictDetails);
+            }
+          } else if (resolutionResult.error) {
+            console.error('Conflict resolution failed:', resolutionResult.error);
+            // Continue with original note data if conflict resolution fails
+          }
+        }
+      }
+
+      // Step 2: Update in SQLite database with resolved data
+      await notesSQLiteService.updateNote(noteId, finalNoteData, userId);
+      
+      // Step 3: Add to sync queue
       const queueId = await syncQueueService.addToQueue(
         OPERATION_TYPES.UPDATE,
         ENTITY_TYPES.NOTE,
         noteId, // Use current noteId (could be local or server ID)
         {
-          ...noteData,
+          ...finalNoteData,
           userId: userId
         }
       );
 
-      // Step 3: UPDATE Redux with fresh data from SQLite
+      // Step 4: UPDATE Redux with fresh data from SQLite
       if (dispatch) {
         const freshNotes = await notesSQLiteService.fetchAllNotes(userId);
         dispatch(setAllNotes(freshNotes));
@@ -172,9 +237,17 @@ export const noteEditorService = {
         console.warn('⚠️ No dispatch provided - Redux will not be updated');
       }
 
+      return {
+        success: true,
+        conflictInfo
+      };
+
     } catch (error) {
       console.error('❌ UPDATE NOTE FAILED:', error);
-      throw error;
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown error'
+      };
     }
   },
 

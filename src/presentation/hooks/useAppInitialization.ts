@@ -8,8 +8,7 @@ import { setAllNotes } from '../../application/store/action/notes/setAllNotes';
 import { setAllBookmarks } from '../../application/store/action/bookmarks/setAllBookmarks';
 import { notesSQLiteService } from '../../application/services/notes/notesSQLiteService';
 import { bookmarksSQLiteService } from '../../application/services/bookmarks/bookmarksSQLiteService';
-// 🚨 DISABLED: Auto-sync functionality removed
-// import { initializeSyncProcessor } from '../../application/services/notes/syncProcessor';
+import { startSyncProcessor } from '../../application/services/notes/syncProcessor';
 
 export const useAppInitialization = () => {
   const dispatch = useDispatch();
@@ -45,13 +44,8 @@ export const useAppInitialization = () => {
         // Step 3: POPULATE REDUX FROM SQLITE (Our agreed plan)
         await populateReduxFromSQLite(sessionResult.data.id);
         
-        // 🚨 DISABLED: Auto-sync functionality removed for local-only operation
-        
-        /*
-        // TODO: Uncomment for future auto-sync implementation
         // Initialize sync processor for automatic background sync
-        await initializeSyncProcessor();
-        */
+        await startSyncProcessor();
 
         // Step 4: Check if recovery is needed
         const recoveryCheck = await RecoveryService.detectRecoveryNeed(sessionResult.data.accessToken);

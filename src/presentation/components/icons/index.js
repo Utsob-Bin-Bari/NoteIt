@@ -10,6 +10,7 @@ export { default as PlusIcon } from './PlusIcon';
 export { default as SearchIcon } from './SearchIcon';
 export { default as SettingsIcon } from './SettingsIcon';
 export { default as ShareIcon } from './ShareIcon';
+export { default as StatsIcon } from './StatsIcon';
 export { default as FilterIcon } from './FilterIcon';
 export { default as SunIcon } from './SunIcon';
 export { default as SyncIcon } from './SyncIcon';

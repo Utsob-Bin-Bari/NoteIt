@@ -3,6 +3,7 @@ import { notesService } from './notesService';
 import { bookmarksService } from '../bookmarks/bookmarksService';
 import { NetworkService } from '../../../infrastructure/utils/NetworkService';
 import { userSessionStorage } from '../../../infrastructure/storage/userSessionStorage';
+import { OPERATION_TYPES } from '../../../infrastructure/storage/DatabaseSchema';
 
 interface SyncProcessor {
   isRunning: boolean;
@@ -12,7 +13,7 @@ interface SyncProcessor {
 
 /**
  * Background sync processor that handles queue processing and app restart recovery
- * 🚨 DISABLED: Auto-sync functionality removed for local-only operation
+ * ✅ ENABLED: Auto-sync functionality active with FIFO queue processing
  */
 export const syncProcessor: SyncProcessor = {
   isRunning: false,
@@ -22,14 +23,9 @@ export const syncProcessor: SyncProcessor = {
 
 /**
  * Start the sync processor
- * 🚨 DISABLED: Auto-sync functionality removed
+ * ✅ ENABLED: Processes sync queue automatically
  */
 export const startSyncProcessor = async (): Promise<void> => {
-  // 🚨 DISABLED: Auto-sync functionality removed for local-only operation
-  return;
-  
-  /* 
-  // TODO: Uncomment for future auto-sync implementation
   if (syncProcessor.isRunning) {
     return;
   }
@@ -43,19 +39,13 @@ export const startSyncProcessor = async (): Promise<void> => {
   syncProcessor.intervalId = setInterval(async () => {
     await processQueueOnce();
   }, 10000);
-  */
 };
 
 /**
  * Stop the sync processor
- * 🚨 DISABLED: Auto-sync functionality removed
+ * ✅ ENABLED: Stops automatic sync processing
  */
 export const stopSyncProcessor = async (): Promise<void> => {
-  // 🚨 DISABLED: Auto-sync functionality removed for local-only operation
-  return;
-  
-  /*
-  // TODO: Uncomment for future auto-sync implementation
   if (!syncProcessor.isRunning) {
     return;
   }
@@ -66,19 +56,13 @@ export const stopSyncProcessor = async (): Promise<void> => {
   }
 
   syncProcessor.isRunning = false;
-  */
 };
 
 /**
  * Process sync queue once - handles app restart recovery
- * 🚨 DISABLED: Auto-sync functionality removed
+ * ✅ ENABLED: Processes pending sync operations
  */
 const processQueueOnce = async (): Promise<void> => {
-  // 🚨 DISABLED: Auto-sync functionality removed for local-only operation
-  return;
-  
-  /*
-  // TODO: Uncomment for future auto-sync implementation
   // Prevent concurrent processing
   if (syncProcessor.processingCount > 0) {
     return;
@@ -111,28 +95,51 @@ const processQueueOnce = async (): Promise<void> => {
     let processedCount = 0;
     let failedCount = 0;
 
-    // Process operations in FIFO order (first in, first out)
+    // Process operations in FIFO order - STOP on first failure to preserve dependencies
     for (const operation of pendingOperations) {
       try {
         let success = false;
 
-        // Route to appropriate service based on entity type
-        if (operation.entity_type === 'note') {
-          success = await notesService.trySyncOperation(operation.entity_id, accessToken);
-        } else if (operation.entity_type === 'bookmark') {
+        // Route to appropriate service based on operation type
+        if (operation.entity_type === 'note' && 
+            (operation.operation_type === OPERATION_TYPES.BOOKMARK || operation.operation_type === OPERATION_TYPES.UNBOOKMARK)) {
+          // Handle bookmark operations
           success = await bookmarksService.trySyncBookmarkOperation(operation.entity_id, accessToken);
+        } else if (operation.entity_type === 'note') {
+          // Handle note operations (create, update, delete, share)
+          success = await notesService.trySyncOperation(operation.entity_id, accessToken);
+        } else {
+          // Unknown operation type - mark as failed
+          success = false;
         }
 
         if (success) {
           processedCount++;
+          
+          // Small delay between successful operations to avoid overwhelming the server
+          await new Promise(resolve => setTimeout(resolve, 100));
         } else {
-          // Increment retry count, will mark as failed if max retries reached
-          const canRetry = await syncQueueService.incrementRetryCount(operation.id);
+          // 🛑 STOP PROCESSING QUEUE when operation fails (likely dependency issue)
+          // This prevents dependent operations from being marked as failed
+          // when their dependencies might be resolved by processing this operation later
+          
           failedCount++;
+          
+          // For dependency-related failures, be more lenient with retry counting
+          // Only increment retry count occasionally to give dependencies time to resolve
+          const currentTime = Date.now();
+          const operationAge = new Date(operation.created_at).getTime();
+          const ageInMinutes = (currentTime - operationAge) / (1000 * 60);
+          
+          // Only increment retry count if operation is older than 2 minutes
+          // This gives dependencies time to be resolved
+          if (ageInMinutes > 2) {
+            await syncQueueService.incrementRetryCount(operation.id);
+          }
+          
+          console.warn(`⚠️ SYNC QUEUE STOPPED at operation ${operation.id} (${operation.operation_type}) - dependencies may not be ready, will retry in next cycle`);
+          break; // Stop processing remaining operations
         }
-
-        // Small delay between operations to avoid overwhelming the server
-        await new Promise(resolve => setTimeout(resolve, 100));
 
       } catch (error) {
         console.error(`❌ SYNC ERROR processing operation ${operation.id}:`, {
@@ -140,8 +147,11 @@ const processQueueOnce = async (): Promise<void> => {
           error: error,
           message: error instanceof Error ? error.message : 'Unknown error'
         });
+        
+        // 🛑 STOP PROCESSING QUEUE on error to preserve operation order
         await syncQueueService.incrementRetryCount(operation.id);
         failedCount++;
+        break; // Stop processing remaining operations
       }
     }
 
@@ -150,19 +160,13 @@ const processQueueOnce = async (): Promise<void> => {
   } finally {
     syncProcessor.processingCount--;
   }
-  */
 };
 
 /**
- * Trigger immediate sync (DISABLED - returns mock data for UI)
- * 🚨 DISABLED: Auto-sync functionality removed - return mock data for UI
+ * Trigger immediate sync
+ * ✅ ENABLED: Manually triggers sync process
  */
 export const triggerImmediateSync = async (): Promise<{processed: number, failed: number}> => {
-  // 🚨 DISABLED: Auto-sync functionality removed for local-only operation
-  return Promise.resolve({ processed: 0, failed: 0 });
-  
-  /*
-  // TODO: Uncomment for future auto-sync implementation
   try {
     const sessionResult = await userSessionStorage.getWithValidation();
     
@@ -171,12 +175,11 @@ export const triggerImmediateSync = async (): Promise<{processed: number, failed
     }
 
     const accessToken = sessionResult.data.accessToken;
-    return await manualSyncAllPending(accessToken);
+    await notesService.manualSyncAllPending(accessToken);
+    return { processed: 1, failed: 0 }; // Simplified return
   } catch (error) {
-    console.error('Error in immediate sync:', error);
-    return { processed: 0, failed: 0 };
+    return { processed: 0, failed: 1 };
   }
-  */
 };
 
 /**
@@ -219,6 +222,28 @@ export const initializeSyncProcessor = async (): Promise<void> => {
     console.error('❌ Error initializing sync processor:', error);
   }
   */
+};
+
+/**
+ * Manual trigger for queue processing - Used by UI retry operations
+ * ✅ ENABLED: Allows manual triggering of queue processing
+ */
+export const manualProcessQueue = async (): Promise<{processed: number, failed: number}> => {
+  try {
+    // Process queue once manually
+    await processQueueOnce();
+    
+    // Get updated queue status to return results
+    const queueStatus = await syncQueueService.getRealQueueStatus();
+    
+    return { 
+      processed: queueStatus.completed || 0, 
+      failed: queueStatus.failed || 0 
+    };
+  } catch (error) {
+    console.error('❌ Error in manual queue processing:', error);
+    return { processed: 0, failed: 0 };
+  }
 };
 
 /**

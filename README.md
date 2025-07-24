@@ -12,6 +12,8 @@ A professional React Native application built with TypeScript for note-taking fu
 - **Bookmark Management** - Save important notes for quick access
 - **Auto-Sync** - Automatic synchronization when online
 - **Data Recovery** - Complete data restoration from server
+- **Conflict Resolution** - Intelligent merging of simultaneous edits using diff-match-patch
+- **Security Validation** - Multi-layer ownership verification for note operations
 
 ### ✅ User Experience
 - **Authentication System** - Secure login/signup with auto-login
@@ -20,6 +22,8 @@ A professional React Native application built with TypeScript for note-taking fu
 - **Responsive Design** - Optimized for all screen sizes
 - **Pull-to-Refresh** - Manual refresh functionality
 - **Settings Management** - Data clearing and sync management
+- **Enhanced Keyboard Handling** - Smart keyboard avoidance and tap-to-dismiss functionality
+- **Touch-Optimized Interface** - Smooth interactions and gesture support
 
 ### ✅ Technical Excellence
 - **SQLite Database** - Local storage with sync queue management
@@ -40,6 +44,19 @@ A professional React Native application built with TypeScript for note-taking fu
 </div>
 
 *Screenshots showing the clean authentication interface and main app functionality including note management, search, sharing, and theme support.*
+
+## 📥 Downloads & Demos
+
+### 📱 Installation Files
+- **Android APK** - [Download Latest Release](releases/) *(Coming Soon)*
+- **iOS IPA** - [Download Latest Release](releases/) *(Coming Soon)*
+
+### 🎥 Demo Videos
+- **Feature Overview** - [Watch Demo](demos/) *(Coming Soon)*
+- **Conflict Resolution** - [Watch Demo](demos/) *(Coming Soon)*
+- **Offline Functionality** - [Watch Demo](demos/) *(Coming Soon)*
+
+*Download links and demo videos will be available in the `releases/` and `demos/` folders respectively.*
 
 ## 📋 Prerequisites
 
@@ -153,6 +170,10 @@ src/
 ├── domain/                   # Business logic layer (innermost)
 │   ├── entities/             # Core business entities
 │   ├── validators/           # Domain-specific validation rules
+│   │   ├── loginValidator.ts # Login form validation
+│   │   ├── signupValidator.ts # Signup form validation
+│   │   ├── shareValidator.ts # Note sharing validation
+│   │   └── noteOwnershipValidator.ts # Note ownership security validation
 │   ├── data/                 # Domain data models
 │   └── types/                # TypeScript type definitions
 │       ├── auth/             # Authentication types
@@ -171,6 +192,12 @@ src/
 │   ├── services/             # Business logic services (functional)
 │   │   ├── auth/             # Authentication services
 │   │   ├── notes/            # Note management services
+│   │   │   ├── notesService.ts # Main notes operations
+│   │   │   ├── noteEditorService.ts # Note editing logic
+│   │   │   ├── conflictResolutionService.ts # Intelligent merge resolution
+│   │   │   ├── syncProcessor.ts # Synchronization handling
+│   │   │   ├── deleteNote.ts # Note deletion with validation
+│   │   │   └── shareNote.ts  # Note sharing functionality
 │   │   ├── bookmarks/        # Bookmark services
 │   │   ├── data/             # Data management services
 │   │   ├── user/             # User services
@@ -332,9 +359,11 @@ src/
 - **Queue Management**: Advanced sync queue controls
 
 ### Conflict Resolution
-- **Intelligent Merging**: Uses diff-match-patch for text conflicts
-- **User Resolution**: Options for handling merge conflicts
-- **Backup Strategy**: Original data preserved during conflicts
+- **3-Way Merge Algorithm**: Intelligent text merging using diff-match-patch library
+- **Last Write Wins Strategy**: Automatic conflict resolution with user notification
+- **Network-Aware**: Only triggers when online with server synchronization
+- **Real-Time Feedback**: User alerts for successful merges and conflict resolutions
+- **Multi-Layer Validation**: Ownership verification at UI, hook, and service levels
 
 ## 🔧 Development
 

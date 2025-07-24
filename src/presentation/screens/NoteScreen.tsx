@@ -6,6 +6,8 @@ import {
   TouchableOpacity, 
   ActivityIndicator,
   KeyboardAvoidingView,
+  TouchableWithoutFeedback,
+  Keyboard,
   Platform 
 } from 'react-native';
 import { AppContext } from '../../application/context/AppContext';
@@ -114,88 +116,90 @@ const NoteScreen = ({ navigation }: any) => {
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       keyboardVerticalOffset={Platform.OS === 'ios' ? 100 : 0}
     >
-      <View style={[GlobalStyles(theme).container, { width: '90%', alignSelf: 'center', flex: 1 }]}>
-        {/* Title Input */}
-        <View style={{ marginBottom: 15 }}>
-          <TextInput
-            style={[
-              {
-                backgroundColor: colors.inputBackground,
-                borderColor: colors.border,
-                color: colors.text,
-                fontSize: 18,
-                fontWeight: '600',
-                paddingHorizontal: 16,
-                paddingVertical: 12,
-                borderRadius: 8,
-                borderWidth: 1,
-              }
-            ]}
-            value={title}
-            onChangeText={setTitle}
-            placeholder="Enter note title"
-            placeholderTextColor={colors.text + '60'}
-            selectionColor={colors.primary}
-            multiline={false}
-            returnKeyType="next"
-            blurOnSubmit={false}
-          />
-        </View>
-
-        {/* Content Input - Takes up maximum available space */}
-        <View style={{ flex: 1, marginBottom: 15 }}>
-          <TextInput
-            style={[
-              {
-                backgroundColor: colors.inputBackground,
-                borderColor: colors.border,
-                color: colors.text,
-                fontSize: 16,
-                paddingHorizontal: 16,
-                paddingVertical: 12,
-                borderRadius: 8,
-                borderWidth: 1,
-                flex: 1,
-                textAlignVertical: 'top',
-              }
-            ]}
-            value={details}
-            onChangeText={setDetails}
-            placeholder="Start writing your note..."
-            placeholderTextColor={colors.text + '60'}
-            selectionColor={colors.primary}
-            multiline={true}
-            scrollEnabled={true}
-          />
-        </View>
-
-        {/* Error Display */}
-        {error ? (
-          <View style={{
-            backgroundColor: colors.error + '20',
-            padding: 15,
-            borderRadius: 8,
-            borderLeftWidth: 4,
-            borderLeftColor: colors.error,
-            marginBottom: 15,
-          }}>
-            <Text style={[GlobalStyles(theme).text, { color: colors.error, fontSize: 14 }]}>
-              {error}
-            </Text>
+      <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
+        <View style={[GlobalStyles(theme).container, { width: '90%', alignSelf: 'center', flex: 1 }]}>
+          {/* Title Input */}
+          <View style={{ marginBottom: 15 }}>
+            <TextInput
+              style={[
+                {
+                  backgroundColor: colors.inputBackground,
+                  borderColor: colors.border,
+                  color: colors.text,
+                  fontSize: 18,
+                  fontWeight: '600',
+                  paddingHorizontal: 16,
+                  paddingVertical: 12,
+                  borderRadius: 8,
+                  borderWidth: 1,
+                }
+              ]}
+              value={title}
+              onChangeText={setTitle}
+              placeholder="Enter note title"
+              placeholderTextColor={colors.text + '60'}
+              selectionColor={colors.primary}
+              multiline={false}
+              returnKeyType="next"
+              blurOnSubmit={false}
+            />
           </View>
-        ) : null}
 
-        {/* Create/Update Button - Always at bottom */}
-        <View style={{ marginBottom: 20 }}>
-          <CustomButton
-            text={isNewNote ? 'Create Note' : 'Update Note'}
-            onPress={handleSaveAndNavigate}
-            disabled={saving || (!hasChanges && !isNewNote)}
-            opacity={saving ? 0.6 : 1}
-            height={50}
-          />
+          {/* Content Input - Takes up maximum available space */}
+          <View style={{ flex: 1, marginBottom: 15 }}>
+            <TextInput
+              style={[
+                {
+                  backgroundColor: colors.inputBackground,
+                  borderColor: colors.border,
+                  color: colors.text,
+                  fontSize: 16,
+                  paddingHorizontal: 16,
+                  paddingVertical: 12,
+                  borderRadius: 8,
+                  borderWidth: 1,
+                  flex: 1,
+                  textAlignVertical: 'top',
+                }
+              ]}
+              value={details}
+              onChangeText={setDetails}
+              placeholder="Start writing your note..."
+              placeholderTextColor={colors.text + '60'}
+              selectionColor={colors.primary}
+              multiline={true}
+              scrollEnabled={true}
+            />
+          </View>
+
+          {/* Error Display */}
+          {error ? (
+            <View style={{
+              backgroundColor: colors.error + '20',
+              padding: 15,
+              borderRadius: 8,
+              borderLeftWidth: 4,
+              borderLeftColor: colors.error,
+              marginBottom: 15,
+            }}>
+              <Text style={[GlobalStyles(theme).text, { color: colors.error, fontSize: 14 }]}>
+                {error}
+              </Text>
+            </View>
+          ) : null}
+
+          {/* Create/Update Button - Always at bottom */}
+          <View style={{ marginBottom: 20 }}>
+            <CustomButton
+              text={isNewNote ? 'Create Note' : 'Update Note'}
+              onPress={handleSaveAndNavigate}
+              disabled={saving || (!hasChanges && !isNewNote)}
+              opacity={saving ? 0.6 : 1}
+              height={50}
+            />
+          </View>
         </View>
-      </View>
+      </TouchableWithoutFeedback>
     </KeyboardAvoidingView>
   );
 };

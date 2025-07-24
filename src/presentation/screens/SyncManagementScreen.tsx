@@ -183,7 +183,9 @@ const SyncManagementScreen = ({ navigation }: any) => {
               {item.operation_type.toUpperCase()} {item.entity_type}
             </Text>
             <View style={{
-              backgroundColor: statusColor + '20',
+              backgroundColor: colors.inputBackground,
+              borderWidth: 1,
+              borderColor: statusColor,
               paddingHorizontal: 8,
               paddingVertical: 2,
               borderRadius: 8,
@@ -208,7 +210,7 @@ const SyncManagementScreen = ({ navigation }: any) => {
             GlobalStyles(theme).text,
             {
               fontSize: 14,
-              color: colors.text + '80',
+              color: colors.placeholder,
               marginBottom: 4,
             }
           ]}>
@@ -222,7 +224,7 @@ const SyncManagementScreen = ({ navigation }: any) => {
             GlobalStyles(theme).text,
             {
               fontSize: 14,
-              color: colors.text + '80',
+              color: colors.placeholder,
               marginBottom: 4,
             }
           ]}>
@@ -233,7 +235,8 @@ const SyncManagementScreen = ({ navigation }: any) => {
             GlobalStyles(theme).text,
             {
               fontSize: 12,
-              color: colors.text + '60',
+              color: colors.placeholder,
+              opacity: 0.7,
             }
           ]}>
             Created: {formatDate(item.created_at)} • Retries: {item.retry_count}/{item.max_retries}
@@ -246,7 +249,9 @@ const SyncManagementScreen = ({ navigation }: any) => {
             style={{
               flexDirection: 'row',
               alignItems: 'center',
-              backgroundColor: colors.error + '15',
+              backgroundColor: colors.inputBackground,
+              borderWidth: 1,
+              borderColor: colors.error,
               paddingHorizontal: 12,
               paddingVertical: 6,
               borderRadius: 8,
@@ -273,7 +278,9 @@ const SyncManagementScreen = ({ navigation }: any) => {
               style={{
                 flexDirection: 'row',
                 alignItems: 'center',
-                backgroundColor: colors.primary + '15',
+                backgroundColor: colors.inputBackground,
+                borderWidth: 1,
+                borderColor: colors.primary,
                 paddingHorizontal: 12,
                 paddingVertical: 6,
                 borderRadius: 8,
@@ -430,7 +437,7 @@ const SyncManagementScreen = ({ navigation }: any) => {
               GlobalStyles(theme).text,
               {
                 fontSize: 14,
-                color: colors.text + '80',
+                color: colors.placeholder,
                 textAlign: 'center',
               }
             ]}>
@@ -476,7 +483,7 @@ const SyncManagementScreen = ({ navigation }: any) => {
               GlobalStyles(theme).text,
               {
                 fontSize: 14,
-                color: colors.text + '80',
+                color: colors.placeholder,
                 textAlign: 'center',
                 marginTop: 4,
               }

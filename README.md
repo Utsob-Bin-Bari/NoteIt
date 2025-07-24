@@ -48,11 +48,22 @@ A professional React Native application built with TypeScript for note-taking fu
 ## 📥 Downloads & Demos
 
 ### 📱 Installation Files
-- **Android APK** - [Download NoteIt v1.0.0](releases/NoteIt-v1.0.0.apk) *(Available)*
+- **Android APK** - [Download NoteIt v1.0.0](releases/NoteIt-v1.0.0.apk) *(48MB)*
+  - **Direct Link**: Navigate to `releases/` folder → Click `NoteIt-v1.0.0.apk` → Click "Download"
+  - **Alternative**: [Download from Google Drive](https://drive.google.com/drive/folders/1cHN-z27kMmypxCaYrfNdPt0ulVurAj6G?usp=share_link) \
 - **iOS IPA** - *Currently unavailable due to node dependency issues*
 
-### 🎥 Demo Videos
-- **App Overview** - [Watch Demo](demos/ScreenRecording_07-24-2025%2010-00-02_1.mov) *(Available)*
+### 🎥 Demo Videos  
+- **App Overview** - [Watch Demo](demos/ScreenRecording_07-24-2025%2010-00-02_1.mov) *(61MB)*
+  - **Direct Link**: Navigate to `demos/` folder → Click video file → Click "Download"
+
+### 📱 Safari Download Instructions
+**If downloads don't work in Safari:**
+1. **Use Google Drive link** - [Direct download](https://drive.google.com/drive/folders/1cHN-z27kMmypxCaYrfNdPt0ulVurAj6G?usp=share_link) *(Most reliable for Safari)*
+2. **Right-click** GitHub links → **"Download Linked File"** or **"Save Link As..."**
+3. **Use Chrome/Firefox** for better large file download support  
+4. **Navigate manually**: Click `releases/` or `demos/` folder above → Click file → Click "Download" button
+5. **Clone repository**: `git clone <repo-url>` and access files locally
 
 *Note: iOS build generation is temporarily disabled due to node dependency conflicts. Working on resolution.*
 

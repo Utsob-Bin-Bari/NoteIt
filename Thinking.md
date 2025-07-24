@@ -202,7 +202,7 @@
 # Commit 16: Minor Design change
 * Enable dark theme on sync log
 
-# Commit 17: apk and screen recording is added. 
+# Commit 17: apk and screen recording is added
 * apk file is added.
 * screen recording is added.
 * Ipa file is creating problem due to node dependency so couldn't extract at that moment.

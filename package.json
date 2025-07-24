@@ -12,7 +12,12 @@
     "clean-android": "cd android && ./gradlew clean && cd ..",
     "clean-ios": "cd ios && pod deintegrate && pod install && cd ..",
     "pod-start": "cd ios && bundle install && bundle exec pod install && cd ..",
-    "pod-install": "cd ios && pod install && cd .."
+    "pod-install": "cd ios && pod install && cd ..",
+    "build-apk-debug": "yarn clean-android && cd android && ./gradlew assembleDebug && cd ..",
+    "build-apk-release": "yarn clean-android && cd android && ./gradlew assembleRelease && cd ..",
+    "build-ios-debug": "yarn clean-ios && react-native run-ios --configuration Debug",
+    "build-ios-release": "yarn clean-ios && react-native run-ios --configuration Release",
+    "archive-ios": "cd ios && xcodebuild -workspace NoteIt.xcworkspace -scheme NoteIt -configuration Release archive -archivePath ./build/NoteIt.xcarchive"
   },
   "dependencies": {
     "@react-native-community/netinfo": "^11.4.1",

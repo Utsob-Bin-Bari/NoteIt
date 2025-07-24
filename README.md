@@ -48,15 +48,13 @@ A professional React Native application built with TypeScript for note-taking fu
 ## 📥 Downloads & Demos
 
 ### 📱 Installation Files
-- **Android APK** - [Download Latest Release](releases/) *(Coming Soon)*
-- **iOS IPA** - [Download Latest Release](releases/) *(Coming Soon)*
+- **Android APK** - [Download NoteIt v1.0.0](releases/NoteIt-v1.0.0.apk) *(Available)*
+- **iOS IPA** - *Currently unavailable due to node dependency issues*
 
 ### 🎥 Demo Videos
-- **Feature Overview** - [Watch Demo](demos/) *(Coming Soon)*
-- **Conflict Resolution** - [Watch Demo](demos/) *(Coming Soon)*
-- **Offline Functionality** - [Watch Demo](demos/) *(Coming Soon)*
+- **App Overview** - [Watch Demo](demos/ScreenRecording_07-24-2025%2010-00-02_1.mov) *(Available)*
 
-*Download links and demo videos will be available in the `releases/` and `demos/` folders respectively.*
+*Note: iOS build generation is temporarily disabled due to node dependency conflicts. Working on resolution.*
 
 ## 📋 Prerequisites
 
@@ -120,6 +118,11 @@ yarn ios
 | `yarn clean-ios` | Clean iOS build and reinstall pods |
 | `yarn pod-start` | Install Ruby dependencies and pods |
 | `yarn pod-install` | Install CocoaPods dependencies |
+| `yarn build-apk-debug` | Build Android APK (debug) |
+| `yarn build-apk-release` | Build Android APK (release) |
+| `yarn build-ios-debug` | Build iOS app (debug) |
+| `yarn build-ios-release` | Build iOS app (release) |
+| `yarn archive-ios` | Archive iOS app for distribution |
 
 ## 📱 Project Information
 

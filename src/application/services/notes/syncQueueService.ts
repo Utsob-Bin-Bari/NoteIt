@@ -15,7 +15,7 @@ export interface QueueOperation {
 
 /**
  * Sync queue management for offline operations
- * 🚨 DISABLED: Auto-sync functionality removed - operations disabled but UI functions kept
+ * ✅ ENABLED: Full FIFO queue with stop-on-failure and local_id to server_id mapping
  */
 export const syncQueueService = {
   /**
@@ -31,15 +31,7 @@ export const syncQueueService = {
     const db = DatabaseInit.getInstance().getDatabase();
     const timestamp = DatabaseHelpers.getCurrentTimestamp();
 
-    // Enhance payload for CREATE operations
-    let enhancedPayload = payload;
-    if (operationType === OPERATION_TYPES.CREATE && entityType === ENTITY_TYPES.NOTE) {
-      enhancedPayload = {
-        ...payload,
-        localId: entityId,
-        originalEntityId: entityId
-      };
-    }
+    // Payload is stored as-is for server operations
 
     return new Promise((resolve, reject) => {
       db.transaction(tx => {
@@ -55,7 +47,7 @@ export const syncQueueService = {
             operationType,
             entityType,
             entityId,
-            enhancedPayload ? JSON.stringify(enhancedPayload) : null,
+            payload ? JSON.stringify(payload) : null,
             timestamp,
             0, // retry_count
             3, // max_retries
@@ -65,7 +57,7 @@ export const syncQueueService = {
             resolve(result.insertId!);
           },
           (_, error) => {
-            console.error('❌ Error adding to sync queue:', error);
+            console.log('Error adding to sync queue:', error);
             reject(error);
             return false;
           }
@@ -86,7 +78,7 @@ export const syncQueueService = {
         tx.executeSql(
           `SELECT * FROM sync_queue 
            WHERE status = 'pending' 
-           ORDER BY created_at ASC`,
+           ORDER BY created_at ASC, id ASC`,  // Added id ASC for strict FIFO order
           [],
           (_, result) => {
             const operations: QueueOperation[] = [];
@@ -203,15 +195,10 @@ export const syncQueueService = {
   },
 
   /**
-   * Get failed operations that can be manually retried (returns empty for UI)
-   * 🚨 DISABLED: Returns empty array for UI compatibility
+   * Get failed operations that can be manually retried
+   * ✅ ENABLED: Returns actual failed operations from database
    */
   getFailedOperations: async (): Promise<QueueOperation[]> => {
-    // 🚨 DISABLED: Returns empty array for UI compatibility
-    return Promise.resolve([]);
-    
-    /*
-    // TODO: Uncomment for future sync implementation
     const db = DatabaseInit.getInstance().getDatabase();
     
     return new Promise((resolve, reject) => {
@@ -219,24 +206,34 @@ export const syncQueueService = {
         tx.executeSql(
           `SELECT * FROM sync_queue 
            WHERE status = 'failed' 
-           ORDER BY created_at DESC`,
+           ORDER BY created_at ASC`,  // FIFO order for retries
           [],
           (_, result) => {
             const operations: QueueOperation[] = [];
             for (let i = 0; i < result.rows.length; i++) {
-              operations.push(result.rows.item(i));
+              const row = result.rows.item(i);
+              operations.push({
+                id: row.id,
+                operation_type: row.operation_type,
+                entity_type: row.entity_type,
+                entity_id: row.entity_id,
+                payload: row.payload,
+                created_at: row.created_at,
+                retry_count: row.retry_count,
+                max_retries: row.max_retries,
+                status: row.status
+              });
             }
             resolve(operations);
           },
           (_, error) => {
-            console.error('Error fetching failed operations:', error);
+            console.log('Error fetching failed operations:', error);
             reject(error);
             return false;
           }
         );
       });
     });
-    */
   },
 
   /**
@@ -258,7 +255,7 @@ export const syncQueueService = {
             resolve();
           },
           (_, error) => {
-            console.error('Error resetting failed operation:', error);
+            console.log('Error resetting failed operation:', error);
             reject(error);
             return false;
           }
@@ -286,7 +283,7 @@ export const syncQueueService = {
             resolve(result.rowsAffected || 0);
           },
           (_, error) => {
-            console.error('Error resetting all failed operations:', error);
+            console.log('Error resetting all failed operations:', error);
             reject(error);
             return false;
           }
@@ -296,15 +293,10 @@ export const syncQueueService = {
   },
 
   /**
-   * Get queue status summary (returns zero counts for UI)
-   * 🚨 DISABLED: Returns zero counts for UI compatibility
+   * Get queue status summary
+   * ✅ ENABLED: Returns actual counts from database
    */
   getQueueStatus: async (): Promise<{pending: number, failed: number}> => {
-    // 🚨 DISABLED: Returns zero counts for UI compatibility
-    return Promise.resolve({ pending: 0, failed: 0 });
-    
-    /*
-    // TODO: Uncomment for future sync implementation
     const db = DatabaseInit.getInstance().getDatabase();
     
     return new Promise((resolve, reject) => {
@@ -328,14 +320,13 @@ export const syncQueueService = {
             resolve({ pending, failed });
           },
           (_, error) => {
-            console.error('Error fetching queue status:', error);
+            console.log('Error fetching queue status:', error);
             reject(error);
             return false;
           }
         );
       });
     });
-    */
   },
 
   /**
@@ -371,7 +362,7 @@ export const syncQueueService = {
             resolve(operations);
           },
           (_, error) => {
-            console.error('❌ Error fetching all sync operations:', error);
+            console.log('Error fetching all sync operations:', error);
             reject(error);
             return false;
           }
@@ -409,7 +400,7 @@ export const syncQueueService = {
             resolve(status);
           },
           (_, error) => {
-            console.error('❌ Error fetching real queue status:', error);
+            console.log('Error fetching real queue status:', error);
             reject(error);
             return false;
           }
@@ -419,15 +410,10 @@ export const syncQueueService = {
   },
 
   /**
-   * Clear all completed operations from queue (DISABLED)
-   * 🚨 DISABLED: No operations to clear
+   * Clear all completed operations from queue
+   * ✅ ENABLED: Clears completed operations to keep queue clean
    */
   clearCompletedOperations: async (): Promise<void> => {
-    // 🚨 DISABLED: No operations to clear
-    return Promise.resolve();
-    
-    /*
-    // TODO: Uncomment for future sync implementation
     const db = DatabaseInit.getInstance().getDatabase();
     
     return new Promise((resolve, reject) => {
@@ -439,14 +425,13 @@ export const syncQueueService = {
             resolve();
           },
           (_, error) => {
-            console.error('Error clearing completed operations:', error);
+            console.log('Error clearing completed operations:', error);
             reject(error);
             return false;
           }
         );
       });
     });
-    */
   },
 
   /**

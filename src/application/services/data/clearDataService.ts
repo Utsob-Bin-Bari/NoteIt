@@ -43,7 +43,7 @@ export const clearDataService = {
               cleared.notes = result.rowsAffected;
             },
             (_, error) => {
-              console.error('❌ Error hard deleting notes:', error);
+              console.log('❌ Error hard deleting notes:', error);
               return false;
             }
           );
@@ -56,7 +56,7 @@ export const clearDataService = {
               cleared.users = result.rowsAffected;
             },
             (_, error) => {
-              console.error('❌ Error hard deleting users:', error);
+              console.log('❌ Error hard deleting users:', error);
               return false;
             }
           );
@@ -69,7 +69,7 @@ export const clearDataService = {
               cleared.syncQueue = result.rowsAffected;
             },
             (_, error) => {
-              console.error('❌ Error hard deleting sync queue:', error);
+              console.log('❌ Error hard deleting sync queue:', error);
               return false;
             }
           );
@@ -82,7 +82,7 @@ export const clearDataService = {
               cleared.appSettings = result.rowsAffected;
             },
             (_, error) => {
-              console.error('❌ Error hard deleting app settings:', error);
+              console.log('❌ Error hard deleting app settings:', error);
               return false;
             }
           );
@@ -95,7 +95,7 @@ export const clearDataService = {
               const sessionCount = result.rows.item(0).count;
             },
             (_, error) => {
-              console.error('❌ Could not verify user session preservation:', error);
+              console.log('❌ Could not verify user session preservation:', error);
               return true; // Continue
             }
           );
@@ -108,13 +108,13 @@ export const clearDataService = {
               // Silently check preserved settings
             },
             (_, error) => {
-              console.error('❌ Could not check preserved settings:', error);
+              console.log('❌ Could not check preserved settings:', error);
               return true; // Continue
             }
           );
         },
         (error) => {
-          console.error('❌ Transaction error during HARD DELETE clear data:', error);
+          console.log('❌ Transaction error during HARD DELETE clear data:', error);
           resolve({
             success: false,
             error: error.message,
@@ -211,7 +211,7 @@ export const clearDataService = {
           }
         );
       }, (error) => {
-        console.error('Error getting data statistics:', error);
+        console.log('Error getting data statistics:', error);
         reject(error);
       });
     });
@@ -233,7 +233,7 @@ export const clearDataService = {
             resolve(hasSession);
           },
           (_, error) => {
-            console.error('Error verifying user session:', error);
+            console.log('Error verifying user session:', error);
             resolve(false);
           }
         );
@@ -313,7 +313,7 @@ export const clearDataService = {
           }
         );
       }, (error) => {
-        console.error('Error getting clear data preview:', error);
+        console.log('Error getting clear data preview:', error);
         reject(error);
       });
     });

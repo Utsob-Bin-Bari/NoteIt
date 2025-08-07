@@ -70,7 +70,7 @@ export const useSyncManagement = () => {
       });
       
     } catch (error: any) {
-      console.error('❌ Error loading sync data:', error);
+      console.log('Error loading sync data:', error);
       setError(error.message || 'Failed to load sync data');
     } finally {
       setLoading(false);
@@ -112,7 +112,7 @@ export const useSyncManagement = () => {
                   setOperationStates(prev => ({ ...prev, [operationId]: 'idle' }));
                 }, 500);
               } catch (deleteError: any) {
-                console.error('❌ Error deleting operation:', deleteError);
+                console.log('Error deleting operation:', deleteError);
                 setOperationStates(prev => ({ ...prev, [operationId]: 'failed' }));
                 setTimeout(() => {
                   setOperationStates(prev => ({ ...prev, [operationId]: 'idle' }));
@@ -123,7 +123,7 @@ export const useSyncManagement = () => {
         ]
       );
     } catch (error) {
-      console.error('❌ Error in delete operation handler:', error);
+      console.log('Error in delete operation handler:', error);
       setOperationStates(prev => ({ ...prev, [operationId]: 'failed' }));
       setTimeout(() => {
         setOperationStates(prev => ({ ...prev, [operationId]: 'idle' }));
@@ -153,7 +153,7 @@ export const useSyncManagement = () => {
       }, 1000);
       
     } catch (error: any) {
-      console.error('❌ Error retrying operation:', error);
+              console.log('Error retrying operation:', error);
       setOperationStates(prev => ({ ...prev, [operationId]: 'failed' }));
       setTimeout(() => {
         setOperationStates(prev => ({ ...prev, [operationId]: 'idle' }));
@@ -194,7 +194,7 @@ export const useSyncManagement = () => {
       );
       
     } catch (error: any) {
-      console.error('❌ Error in sync all operations:', error);
+      console.log('Error in sync all operations:', error);
       setError(error.message || 'Failed to retry operations');
       Alert.alert(
         'Retry Failed',
@@ -243,7 +243,7 @@ export const useSyncManagement = () => {
       }, 2000);
       
     } catch (error: any) {
-      console.error('❌ Error clearing failed delete operations:', error);
+      console.log('Error clearing failed delete operations:', error);
       setClearFailedDeletesState('failed');
       Alert.alert('Error', 'Failed to clear failed delete operations.');
       

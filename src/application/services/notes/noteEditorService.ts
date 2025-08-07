@@ -18,12 +18,12 @@ export const noteEditorService = {
     try {
       const notes = await notesSQLiteService.fetchAllNotes(userId);
       
-      // Search by both id and local_id to handle all cases
-      const foundNote = notes.find(note => note.id === noteId || note.local_id === noteId);
+      // Search by local_id (primary identifier for all local operations)
+      const foundNote = notes.find(note => note.local_id === noteId);
       
       return foundNote || null;
     } catch (error) {
-      console.error('Error loading note by ID:', error);
+      console.log('Error loading note by ID:', error);
       return null;
     }
   },
@@ -121,7 +121,7 @@ export const noteEditorService = {
         conflictInfo
       };
     } catch (error) {
-      console.error('❌ Error saving note:', error);
+      console.log('❌ Error saving note:', error);
       return {
         success: false,
         error: 'Failed to save note'
@@ -159,12 +159,12 @@ export const noteEditorService = {
         const freshNotes = await notesSQLiteService.fetchAllNotes(userId);
         dispatch(setAllNotes(freshNotes));
       } else {
-        console.warn('⚠️ No dispatch provided - Redux will not be updated');
+        console.log('⚠️ No dispatch provided - Redux will not be updated');
       }
       return localId; // Return local ID for UI correlation
 
     } catch (error) {
-      console.error('❌ CREATE NOTE FAILED:', error);
+      console.log('❌ CREATE NOTE FAILED:', error);
       throw error;
     }
   },
@@ -206,10 +206,10 @@ export const noteEditorService = {
             
             // Log conflict resolution details [[memory:4007386]]
             if (conflictInfo?.hasConflicts) {
-              console.error('Conflict resolved for note:', noteId, conflictInfo.conflictDetails);
+              console.log('Conflict resolved for note:', noteId, conflictInfo.conflictDetails);
             }
           } else if (resolutionResult.error) {
-            console.error('Conflict resolution failed:', resolutionResult.error);
+            console.log('Conflict resolution failed:', resolutionResult.error);
             // Continue with original note data if conflict resolution fails
           }
         }
@@ -234,7 +234,7 @@ export const noteEditorService = {
         const freshNotes = await notesSQLiteService.fetchAllNotes(userId);
         dispatch(setAllNotes(freshNotes));
       } else {
-        console.warn('⚠️ No dispatch provided - Redux will not be updated');
+        console.log('⚠️ No dispatch provided - Redux will not be updated');
       }
 
       return {
@@ -243,7 +243,7 @@ export const noteEditorService = {
       };
 
     } catch (error) {
-      console.error('❌ UPDATE NOTE FAILED:', error);
+      console.log('❌ UPDATE NOTE FAILED:', error);
       return {
         success: false,
         error: error instanceof Error ? error.message : 'Unknown error'
@@ -258,7 +258,7 @@ export const noteEditorService = {
     try {
       return note.shared_with || [];
     } catch (error) {
-      console.error('Error getting shared users:', error);
+      console.log('Error getting shared users:', error);
       return [];
     }
   },

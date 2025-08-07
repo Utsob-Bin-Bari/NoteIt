@@ -12,7 +12,7 @@ export const useNetworkStatus = () => {
         const networkState = await NetworkService.getCurrentNetworkState();
         setIsConnected(networkState.isConnected ?? false);
       } catch (error) {
-        console.error('Failed to get initial network state:', error);
+        console.log('Failed to get initial network state:', error);
         setIsConnected(false);
       } finally {
         setIsLoading(false);

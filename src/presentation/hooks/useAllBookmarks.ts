@@ -38,38 +38,12 @@ export const useAllBookmarks = () => {
     setIsOnline(connected);
   }, []);
   
-  /**
-   * Update sync status (DISABLED - returns mock data)
-   * 🚨 DISABLED: Server sync functionality removed
-   */
   const updateSyncStatus = useCallback(async () => {
-    // 🚨 DISABLED: Sync functionality removed for local-only operation
     return {
       hasLocalChanges: false,
       pendingOperations: 0,
       failedOperations: 0,
     };
-    
-    /*
-    // TODO: Uncomment for future sync implementation
-    try {
-      const syncInfo = await bookmarksService.getBookmarkSyncStatus(reduxUserData?.id || '');
-      setSyncStatus(syncInfo);
-      
-      if (syncInfo.failedOperations > 0) {
-        setShowRetryButton(true);
-      }
-      
-      return syncInfo;
-    } catch (error) {
-      console.error('Error updating bookmark sync status:', error);
-      return {
-        hasLocalChanges: false,
-        pendingOperations: 0,
-        failedOperations: 0,
-      };
-    }
-    */
   }, [reduxUserData?.id]);
 
   /**
@@ -87,7 +61,7 @@ export const useAllBookmarks = () => {
       dispatch(setAllBookmarks(localBookmarks));
       
     } catch (error: any) {
-      console.error('❌ Error loading bookmarks:', error);
+      console.log('Error loading bookmarks:', error);
       dispatch(setBookmarksError(error.message || 'Failed to load bookmarks'));
     } finally {
       dispatch(setBookmarksLoading(false));
@@ -107,7 +81,7 @@ export const useAllBookmarks = () => {
       dispatch(setAllBookmarks(freshBookmarks));
       
     } catch (error: any) {
-      console.error('❌ Error refreshing bookmarks:', error);
+      console.log('Error refreshing bookmarks:', error);
       dispatch(setBookmarksError(error.message || 'Failed to refresh bookmarks'));
     } finally {
       dispatch(setBookmarksRefreshing(false));
@@ -131,7 +105,7 @@ export const useAllBookmarks = () => {
       // STEP 1: OPTIMISTIC UI UPDATE - Remove from bookmarks list immediately
       if (isCurrentlyBookmarked) {
         const currentBookmarks = bookmarks || [];
-        const updatedBookmarks = currentBookmarks.filter(bookmark => bookmark.id !== noteId && bookmark.local_id !== noteId);
+        const updatedBookmarks = currentBookmarks.filter(bookmark => bookmark.local_id !== noteId);
         dispatch(setAllBookmarks(updatedBookmarks));
       }
 
@@ -157,7 +131,7 @@ export const useAllBookmarks = () => {
       return { success: true };
 
     } catch (error: any) {
-      console.error(`❌ OPTIMISTIC BOOKMARK TOGGLE FAILED (Bookmarks Page):`, error);
+      console.log('Optimistic bookmark toggle failed (Bookmarks Page):', error);
       
       // STEP 4: REVERT UI ON FAILURE
       try {
@@ -167,7 +141,7 @@ export const useAllBookmarks = () => {
         const freshNotes = await notesSQLiteService.fetchAllNotes(reduxUserData.id);
         dispatch(setAllNotes(freshNotes));
       } catch (restoreError) {
-        console.error('❌ Failed to restore Redux states:', restoreError);
+        console.log('Failed to restore Redux states:', restoreError);
       }
       
       return { success: false, error: error.message || 'Failed to toggle bookmark' };
@@ -180,27 +154,14 @@ export const useAllBookmarks = () => {
     try {
       return await bookmarksService.isNoteBookmarked(noteId, reduxUserData.id);
     } catch (error) {
-      console.error('Error checking bookmark status:', error);
+      console.log('Error checking bookmark status:', error);
       return false;
     }
   }, [isLoggedIn, reduxUserData?.id]);
   
-  /**
-   * Get network sync state (shows actual network status in local-only mode)
-   * 🚨 DISABLED: Shows network status instead of sync status since sync is disabled
-   */
   const getNetworkSyncState = useCallback(() => {
-    // 🚨 DISABLED: Show actual network status instead of always offline
     if (!isOnline) return 'offline';
-    return 'online'; // Show online when connected since sync is disabled
-    
-    /*
-    // TODO: Uncomment for future sync implementation
-    if (syncing) return 'syncing';
-    if (showRetryButton) return 'retry';
-    if (isOnline) return 'online';
-    return 'offline';
-    */
+    return 'online';
   }, [isOnline]);
   
   // Load bookmarks on mount

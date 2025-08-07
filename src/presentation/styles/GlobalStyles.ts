@@ -109,4 +109,28 @@ export const GlobalStyles = (theme: ThemeType) => StyleSheet.create({
     marginTop: 10,
     fontSize: 14,
   },
+  searchInputContainer: {
+    flexDirection: 'row',
+    width: '100%',
+    height: 40,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: getColors(theme).border,
+    backgroundColor: getColors(theme).inputBackground,
+    overflow: 'hidden',
+    marginBottom: 10,
+  },
+  searchOrFilterIconContainer: {
+    width: 50,
+    height: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  searchTextContainer:{
+    flex: 1,
+    height: 40,
+    paddingHorizontal: 16,
+    fontSize: 16,
+    color: getColors(theme).text,
+  }
 });

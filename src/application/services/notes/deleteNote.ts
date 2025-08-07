@@ -9,8 +9,9 @@ import { validateNoteOwnershipById } from '../../../domain/validators/noteOwners
 import { Dispatch } from 'redux';
 
 /**
- * DELETE NOTE - Following our agreed plan implementation
- * User Action → SQLite Database → Query Table → Redux Update → UI Refresh
+ * DELETE NOTE - Soft Delete Implementation for Sync Integrity
+ * User Action → Soft Delete in SQLite → Queue for Sync → Redux Update → UI Refresh
+ * Note: Soft delete preserves server ID for sync queue processing
  */
 export const deleteNote = async (
   noteId: string,
@@ -25,13 +26,24 @@ export const deleteNote = async (
     const ownershipValidation = validateNoteOwnershipById(noteId, userId, allNotes);
     
     if (!ownershipValidation.isOwner) {
+      // Check if this note was already soft deleted by getting ALL notes (including deleted ones)
+      const allNotesIncludingDeleted = await notesSQLiteService.getSoftDeletedNotes();
+      const alreadyDeletedNote = allNotesIncludingDeleted.find(note => 
+        note.local_id === noteId && note.owner_id === userId
+      );
+      
+      if (alreadyDeletedNote) {
+        // Note is already soft deleted by this user - treat as successful operation
+        return { success: true };
+      }
+      
       return {
         success: false,
         error: ownershipValidation.error || 'Only owner can delete the note'
       };
     }
 
-    // Step 2: Proceed with deletion if ownership is validated
+    // Step 2: Proceed with soft delete if ownership is validated (preserves server ID for sync)
     await notesSQLiteService.deleteNote(noteId);
 
     const queueId = await syncQueueService.addToQueue(
@@ -53,11 +65,11 @@ export const deleteNote = async (
           const freshNotes = await notesSQLiteService.fetchAllNotes(userId);
           dispatch(setAllNotes(freshNotes));
         } catch (refreshError) {
-          console.error('⚠️ Failed to refresh Redux after delete:', refreshError);
+          console.log('⚠️ Failed to refresh Redux after delete:', refreshError);
         }
       }, 100);
     } else {
-      console.warn('⚠️ No dispatch provided - Redux will not be updated');
+      console.log('⚠️ No dispatch provided - Redux will not be updated');
     }
 
     return { success: true };
@@ -71,7 +83,7 @@ export const deleteNote = async (
         const currentNotes = await notesSQLiteService.fetchAllNotes(userId);
         dispatch(setAllNotes(currentNotes));
       } catch (restoreError) {
-        console.error('❌ Failed to restore Redux state:', restoreError);
+        console.log('❌ Failed to restore Redux state:', restoreError);
       }
     }
     
@@ -116,10 +128,10 @@ export const verifyDeleteFlow = async (userId: string): Promise<{
     // Step 2: Delete the first note
     const noteToDelete = initialNotes[0];
     
-    const deleteResult = await deleteNote(noteToDelete.id, userId);
+    const deleteResult = await deleteNote(noteToDelete.local_id, userId);
     
     if (!deleteResult.success) {
-      console.error('❌ VERIFY: Delete operation failed');
+      console.log('❌ VERIFY: Delete operation failed');
       return {
         success: false,
         details: {
@@ -146,12 +158,12 @@ export const verifyDeleteFlow = async (userId: string): Promise<{
         beforeCount: initialNotes.length,
         afterCount: finalNotes.length,
         queueOperations: finalQueueOps.length,
-        deletedNoteId: noteToDelete.id
+        deletedNoteId: noteToDelete.local_id
       }
     };
     
   } catch (error) {
-    console.error('❌ VERIFY: Delete flow verification failed:', error);
+    console.log('❌ VERIFY: Delete flow verification failed:', error);
     return {
       success: false,
       details: {

@@ -44,7 +44,7 @@ export const notesReducer = (state: NotesState = notesInitialState, action: Note
     case DeleteNote:
       return {
         ...state,
-        data: state.data.filter(note => note.id !== action.payload),
+        data: state.data.filter(note => note.local_id !== action.payload),
       };
     case SetNotesLoading:
       return {

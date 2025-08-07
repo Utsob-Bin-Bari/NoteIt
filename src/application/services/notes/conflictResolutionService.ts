@@ -36,7 +36,7 @@ export const conflictResolutionService = {
 
       return true;
     } catch (error) {
-      console.error('Error checking conflict resolution conditions:', error);
+      console.log('Error checking conflict resolution conditions:', error);
       return false;
     }
   },
@@ -44,25 +44,25 @@ export const conflictResolutionService = {
   /**
    * Fetch current server version of the note
    */
-  fetchServerNote: async (noteId: string, accessToken: string): Promise<Note | null> => {
+    fetchServerNote: async (noteId: string, accessToken: string): Promise<Note | null> => {
     try {
       const response = await fetchNoteById({ noteId, accessToken });
-             if (response.note) {
-         return {
-           id: response.note.id,
-           title: response.note.title || '',
-           details: response.note.details || '',
-           owner_id: response.note.owner_id,
-           shared_with: response.note.shared_with || [],
-           bookmarked_by: response.note.bookmarked_by || [],
-           created_at: response.note.created_at,
-           updated_at: response.note.updated_at,
-           local_id: null
-         };
-       }
+      if (response.note) {
+        return {
+          local_id: `server_${response.note.id}`, // Temporary local_id for server note
+          server_id: response.note.id,
+          title: response.note.title || '',
+          details: response.note.details || '',
+          owner_id: response.note.owner_id,
+          shared_with: response.note.shared_with || [],
+          bookmarked_by: response.note.bookmarked_by || [],
+          created_at: response.note.created_at,
+          updated_at: response.note.updated_at,
+        };
+      }
       return null;
     } catch (error) {
-      console.error('Error fetching server note:', error);
+      console.log('Error fetching server note:', error);
       return null;
     }
   },
@@ -225,7 +225,7 @@ export const conflictResolutionService = {
       };
 
     } catch (error) {
-      console.error('Error performing conflict resolution:', error);
+      console.log('Error performing conflict resolution:', error);
       return {
         needsResolution: false,
         error: `Conflict resolution failed: ${error}`

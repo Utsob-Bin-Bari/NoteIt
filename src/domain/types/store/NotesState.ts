@@ -1,6 +1,6 @@
 export interface Note {
-  id: string;
-  local_id?: string | null; // Make optional and allow null since server notes don't have local_id
+  local_id: string;                     // Primary identifier - always present, used for all local operations
+  server_id?: string | null;            // Server identifier - only present after sync, used for server operations
   title: string;
   details: string;
   owner_id: string;
@@ -12,7 +12,7 @@ export interface Note {
 
 export interface NotesState {
   data: Note[];
-  selectedNoteId: string | null;
+  selectedNoteId: string | null;        // Should always store local_id for consistency
   loading: boolean;
   refreshing: boolean;
   syncing: boolean;

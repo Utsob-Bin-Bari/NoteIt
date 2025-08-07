@@ -13,7 +13,7 @@ export const NetworkService = {
         isInternetReachable: state.isInternetReachable,
       };
     } catch (error) {
-      console.error('Error fetching network state:', error);
+      console.log('Error fetching network state:', error);
       return {
         isConnected: false,
         type: null,

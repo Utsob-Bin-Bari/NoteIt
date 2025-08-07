@@ -53,7 +53,7 @@ export const RecoveryService = {
 
       return emails;
     } catch (error) {
-      console.error(`❌ Failed to convert user IDs to emails for note ${noteId}:`, error);
+      console.log(`Failed to convert user IDs to emails for note ${noteId}:`, error);
       return []; // Return empty array on error
     }
   },
@@ -149,6 +149,7 @@ export const RecoveryService = {
       // Step 1: Fetch user data from BACKEND SERVER
       try {
         const userData = await getUserData({ accessToken });
+        
         if (userData.user) {
           // Update local user session if needed
           await db.executeSql(
@@ -158,37 +159,48 @@ export const RecoveryService = {
           result.recovered.userData = true;
         }
       } catch (error) {
+        console.log('User data recovery failed:', error);
+        // Continue with other recovery steps even if user data fails
       }
 
       // Step 2: Fetch user's own notes from BACKEND SERVER
-      const backendNotes = await fetchAllNotes({ accessToken });
-      
-      if (backendNotes.notes && backendNotes.notes.length > 0) {
-        for (const note of backendNotes.notes) {
-          // Convert shared_with user IDs to emails before storing
-          let sharedWithEmails: string[] = [];
-          if (note.shared_with && note.shared_with.length > 0) {
-            sharedWithEmails = await RecoveryService.convertUserIdsToEmails(
-              note.id, 
-              note.shared_with, 
-              accessToken
-            );
-          }
+      try {
+        const backendNotes = await fetchAllNotes({ accessToken });
+        
+        if (backendNotes.notes && backendNotes.notes.length > 0) {
+          for (const note of backendNotes.notes) {
+            try {
+              // Convert shared_with user IDs to emails before storing
+              let sharedWithEmails: string[] = [];
+              if (note.shared_with && note.shared_with.length > 0) {
+                sharedWithEmails = await RecoveryService.convertUserIdsToEmails(
+                  note.id, 
+                  note.shared_with, 
+                  accessToken
+                );
+              }
 
-          await db.executeSql(
-            `INSERT OR REPLACE INTO notes 
-             (id, title, details, owner_id, shared_with, bookmarked_by, created_at, updated_at, sync_status, is_deleted, needs_sync) 
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'synced', 0, 0)`,
-            [
-              note.id, note.title, note.details, note.owner_id,
-              JSON.stringify(sharedWithEmails), // Store emails instead of user IDs
-              JSON.stringify(note.bookmarked_by || []),
-              note.created_at, note.updated_at
-            ]
-          );
-          result.recovered.ownNotes++;
+              await db.executeSql(
+                `INSERT OR REPLACE INTO notes 
+                 (local_id, server_id, title, details, owner_id, shared_with, bookmarked_by, created_at, updated_at, sync_status, is_deleted, needs_sync) 
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'synced', 0, 0)`,
+                [
+                  `recovery_${note.id}`, // Generate local_id for recovery
+                  note.id, // Store as server_id
+                  note.title, note.details, note.owner_id,
+                  JSON.stringify(sharedWithEmails), // Store emails instead of user IDs
+                  JSON.stringify(note.bookmarked_by || []),
+                  note.created_at, note.updated_at
+                ]
+              );
+              result.recovered.ownNotes++;
+            } catch (noteError) {
+              console.log(`Failed to recover own note ${note.id}:`, noteError);
+            }
+          }
         }
-      } else {
+      } catch (error) {
+        console.log('Own notes recovery failed:', error);
       }
 
       // Step 3: Fetch shared notes from BACKEND SERVER
@@ -197,32 +209,38 @@ export const RecoveryService = {
         
         if (sharedNotes.notes && sharedNotes.notes.length > 0) {
           for (const note of sharedNotes.notes) {
-            // Convert shared_with user IDs to emails before storing
-            let sharedWithEmails: string[] = [];
-            if (note.shared_with && note.shared_with.length > 0) {
-              sharedWithEmails = await RecoveryService.convertUserIdsToEmails(
-                note.id, 
-                note.shared_with, 
-                accessToken
-              );
-            }
+            try {
+              // Convert shared_with user IDs to emails before storing
+              let sharedWithEmails: string[] = [];
+              if (note.shared_with && note.shared_with.length > 0) {
+                sharedWithEmails = await RecoveryService.convertUserIdsToEmails(
+                  note.id, 
+                  note.shared_with, 
+                  accessToken
+                );
+              }
 
-            await db.executeSql(
-              `INSERT OR REPLACE INTO notes 
-               (id, title, details, owner_id, shared_with, bookmarked_by, created_at, updated_at, sync_status, is_deleted, needs_sync) 
-               VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'synced', 0, 0)`,
-              [
-                note.id, note.title, note.details, note.owner_id,
-                JSON.stringify(sharedWithEmails), // Store emails instead of user IDs
-                JSON.stringify(note.bookmarked_by || []),
-                note.created_at, note.updated_at
-              ]
-            );
-            result.recovered.sharedNotes++;
+              await db.executeSql(
+                `INSERT OR REPLACE INTO notes 
+                 (local_id, server_id, title, details, owner_id, shared_with, bookmarked_by, created_at, updated_at, sync_status, is_deleted, needs_sync) 
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'synced', 0, 0)`,
+                [
+                  `recovery_shared_${note.id}`, // Generate local_id for recovery
+                  note.id, // Store as server_id
+                  note.title, note.details, note.owner_id,
+                  JSON.stringify(sharedWithEmails), // Store emails instead of user IDs
+                  JSON.stringify(note.bookmarked_by || []),
+                  note.created_at, note.updated_at
+                ]
+              );
+              result.recovered.sharedNotes++;
+            } catch (noteError) {
+              console.log(`Failed to recover shared note ${note.id}:`, noteError);
+            }
           }
-        } else {
         }
       } catch (error) {
+        console.log('Shared notes recovery failed:', error);
       }
 
       // Step 4: Fetch bookmarked notes from BACKEND SERVER
@@ -231,47 +249,64 @@ export const RecoveryService = {
         
         if (bookmarkedNotes.notes && bookmarkedNotes.notes.length > 0) {
           for (const note of bookmarkedNotes.notes) {
-            // Convert shared_with user IDs to emails before storing
-            let sharedWithEmails: string[] = [];
-            if (note.shared_with && note.shared_with.length > 0) {
-              sharedWithEmails = await RecoveryService.convertUserIdsToEmails(
-                note.id, 
-                note.shared_with, 
-                accessToken
-              );
-            }
+            try {
+              // Convert shared_with user IDs to emails before storing
+              let sharedWithEmails: string[] = [];
+              if (note.shared_with && note.shared_with.length > 0) {
+                sharedWithEmails = await RecoveryService.convertUserIdsToEmails(
+                  note.id, 
+                  note.shared_with, 
+                  accessToken
+                );
+              }
 
-            await db.executeSql(
-              `INSERT OR REPLACE INTO notes 
-               (id, title, details, owner_id, shared_with, bookmarked_by, created_at, updated_at, sync_status, is_deleted, needs_sync) 
-               VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'synced', 0, 0)`,
-              [
-                note.id, note.title, note.details, note.owner_id,
-                JSON.stringify(sharedWithEmails), // Store emails instead of user IDs
-                JSON.stringify(note.bookmarked_by || []),
-                note.created_at, note.updated_at
-              ]
-            );
-            result.recovered.bookmarkedNotes++;
+              await db.executeSql(
+                `INSERT OR REPLACE INTO notes 
+                 (local_id, server_id, title, details, owner_id, shared_with, bookmarked_by, created_at, updated_at, sync_status, is_deleted, needs_sync) 
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'synced', 0, 0)`,
+                [
+                  `recovery_bookmarked_${note.id}`, // Generate local_id for recovery
+                  note.id, // Store as server_id
+                  note.title, note.details, note.owner_id,
+                  JSON.stringify(sharedWithEmails), // Store emails instead of user IDs
+                  JSON.stringify(note.bookmarked_by || []),
+                  note.created_at, note.updated_at
+                ]
+              );
+              result.recovered.bookmarkedNotes++;
+            } catch (noteError) {
+              console.log(`Failed to recover bookmarked note ${note.id}:`, noteError);
+            }
           }
-        } else {
         }
       } catch (error) {
+        console.log('Bookmarked notes recovery failed:', error);
       }
 
       // Step 5: Update sync metadata
-      await db.executeSql(
-        `INSERT OR REPLACE INTO app_settings (key, value, updated_at) VALUES 
-         ('last_full_sync', ?, ?),
-         ('recovery_completed_at', ?, ?)`,
-        [currentTime, currentTime, currentTime, currentTime]
-      );
+      try {
+        await db.executeSql(
+          `INSERT OR REPLACE INTO app_settings (key, value, updated_at) VALUES 
+           ('last_full_sync', ?, ?),
+           ('recovery_completed_at', ?, ?)`,
+          [currentTime, currentTime, currentTime, currentTime]
+        );
+      } catch (error) {
+        console.log('Failed to update sync metadata:', error);
+      }
 
       result.success = true;
       const totalNotes = result.recovered.ownNotes + result.recovered.sharedNotes + result.recovered.bookmarkedNotes;
       
+
+      
     } catch (error) {
-      result.error = `Recovery from BACKEND SERVER failed: ${error}`;
+      console.log('Recovery error:', error);
+      if (error instanceof Error) {
+        result.error = `Recovery from BACKEND SERVER failed: ${error.message}`;
+      } else {
+        result.error = `Recovery from BACKEND SERVER failed: ${String(error)}`;
+      }
     }
 
     return result;

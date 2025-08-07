@@ -72,7 +72,7 @@ export const useAppInitialization = () => {
 
       setIsInitialized(true);
     } catch (error: any) {
-      console.error('❌ App initialization failed:', error);
+      console.log('App initialization failed:', error);
       setError('Failed to initialize app');
     } finally {
       setIsLoading(false);
@@ -93,7 +93,7 @@ export const useAppInitialization = () => {
       dispatch(setAllBookmarks(localBookmarks));
 
     } catch (error: any) {
-      console.error('❌ Failed to populate Redux from SQLite:', error);
+      console.log('Failed to populate Redux from SQLite:', error);
       
       // Initialize with empty arrays to prevent null errors
       dispatch(setAllNotes([]));

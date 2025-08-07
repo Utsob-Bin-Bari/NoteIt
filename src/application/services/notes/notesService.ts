@@ -6,7 +6,7 @@ import { updateNoteById } from '../../../infrastructure/api/requests/notes/updat
 import { deleteNoteById } from '../../../infrastructure/api/requests/notes/deleteNoteById';
 import { shareNoteByEmail } from '../../../infrastructure/api/requests/notes/shareNoteByEmail';
 import { NetworkService } from '../../../infrastructure/utils/NetworkService';
-import { OPERATION_TYPES, ENTITY_TYPES } from '../../../infrastructure/storage/DatabaseSchema';
+import { OPERATION_TYPES, ENTITY_TYPES, DatabaseHelpers } from '../../../infrastructure/storage/DatabaseSchema';
 import { Note } from '../../../domain/types/store/NotesState';
 
 /**
@@ -23,7 +23,7 @@ export const notesService = {
       
       return notes;
     } catch (error) {
-      console.error('❌ Error loading notes from LOCAL DATABASE:', error);
+      console.log('Error loading notes from LOCAL DATABASE:', error);
       return [];
     }
   },
@@ -36,15 +36,24 @@ export const notesService = {
     try {
       const response = await fetchAllNotes({ accessToken });
       
-      // Save server notes to local database
+      // Save server notes to local database with proper dual ID system
       if (response.notes && response.notes.length > 0) {
         for (const serverNote of response.notes) {
-          // Add local_id as null for server notes to match Note interface
-          const noteWithLocalId: Note = {
-            ...serverNote,
-            local_id: null
+          // Check if note already exists locally by server_id
+          const existingLocalId = await notesSQLiteService.getLocalIdByServerId(serverNote.id);
+          
+          const noteWithDualId: Note = {
+            local_id: existingLocalId || DatabaseHelpers.generateLocalId(), // Generate or preserve local_id
+            server_id: serverNote.id, // Server ID from response
+            title: serverNote.title,
+            details: serverNote.details,
+            owner_id: serverNote.owner_id,
+            shared_with: serverNote.shared_with || [],
+            bookmarked_by: serverNote.bookmarked_by || [],
+            created_at: serverNote.created_at,
+            updated_at: serverNote.updated_at,
           };
-          await notesSQLiteService.saveServerNote(noteWithLocalId);
+          await notesSQLiteService.saveServerNote(noteWithDualId);
         }
       }
       
@@ -154,25 +163,7 @@ export const notesService = {
     }
   },
 
-  /**
-   * Manually sync all pending operations
-   * ✅ ENABLED: Processes all pending sync operations
-   */
-  manualSyncAllPending: async (accessToken: string): Promise<void> => {
-    try {
-      const pendingOperations = await syncQueueService.getPendingOperations();
-      
-      for (const operation of pendingOperations) {
-        try {
-          await notesService.trySyncOperation(operation.entity_id, accessToken);
-        } catch (error) {
-          // Continue with next operation if one fails
-        }
-      }
-    } catch (error) {
-      // Silent failure - sync will retry later
-    }
-  },
+
 
   /**
    * Try to sync a specific operation
@@ -196,8 +187,7 @@ export const notesService = {
         switch (operation.operation_type) {
           case OPERATION_TYPES.CREATE:
             const createPayload = JSON.parse(operation.payload || '{}');
-            const localId = createPayload.localId || operation.entity_id; // Get local ID from payload
-            
+            const localId = operation.entity_id; // Queue always uses local_id as entity_id
             
             const createResponse = await createNewNote({
               requestBody: {
@@ -207,17 +197,13 @@ export const notesService = {
               accessToken
             });
             
-            // CRITICAL: Update local note ID to match server ID using local ID correlation
+            // CRITICAL: Store server_id for local_id but keep local_id as primary
             if (createResponse.note && createResponse.note.id) {
+              // Update the note with server_id but keep local_id as primary
+              await notesSQLiteService.updateServerIdByLocalId(localId, createResponse.note.id);
               
-              // Update the note with server ID using local ID correlation
-              await notesSQLiteService.updateLocalIdToServerId(localId, createResponse.note.id);
-              
-              // Update sync queue to reference the new server ID
-              await syncQueueService.updateEntityId(operation.id, createResponse.note.id);
-              
-              // Mark with server data using the NEW server ID
-              await notesSQLiteService.markNoteSynced(createResponse.note.id, {
+              // Mark note as synced using local_id (queue always works with local_id)
+              await notesSQLiteService.markNoteSynced(localId, {
                 title: createResponse.note.title,
                 details: createResponse.note.details,
                 owner_id: createResponse.note.owner_id,
@@ -226,9 +212,8 @@ export const notesService = {
                 created_at: createResponse.note.created_at,
                 updated_at: createResponse.note.updated_at,
               });
-              
             } else {
-              console.error('❌ Server response missing note ID');
+              console.log('❌ Server response missing note ID');
               throw new Error('Server response missing note ID');
             }
             
@@ -237,21 +222,18 @@ export const notesService = {
             
           case OPERATION_TYPES.UPDATE:
             const updatePayload = JSON.parse(operation.payload || '{}');
+            const updateLocalId = operation.entity_id; // Queue always uses local_id as entity_id
             
-            // For UPDATE operations, the entity_id could be local ID or server ID
-            // We need to handle both cases
-            let updateNoteId = operation.entity_id;
-            
-            // Check if this is a local ID that needs to be converted to server ID
-            if (updateNoteId.startsWith('local_')) {
-              // This is an edge case - local ID for UPDATE without CREATE being processed
-              // We should skip this operation until CREATE is processed
+            // Find server_id by local_id for server operation
+            const updateServerId = await notesSQLiteService.getServerIdByLocalId(updateLocalId);
+            if (!updateServerId) {
+              // Note hasn't been synced to server yet, skip this operation
+              console.log(`⚠️ UPDATE skipped: No server_id found for local_id ${updateLocalId}`);
               return false;
             }
             
-            
             const updateResponse = await updateNoteById({
-              noteId: updateNoteId,
+              noteId: updateServerId, // Use server_id for server operation
               requestBody: {
                 title: updatePayload.title,
                 details: updatePayload.details,
@@ -259,9 +241,9 @@ export const notesService = {
               accessToken
             });
             
-            // Update local note with server response data
+            // Update local note with server response data using local_id
             if (updateResponse.note) {
-              await notesSQLiteService.markNoteSynced(updateNoteId, {
+              await notesSQLiteService.markNoteSynced(updateLocalId, {
                 title: updateResponse.note.title,
                 details: updateResponse.note.details,
                 updated_at: updateResponse.note.updated_at,
@@ -272,35 +254,42 @@ export const notesService = {
             break;
             
           case OPERATION_TYPES.DELETE:
-            // For DELETE operations, the entity_id could be local ID or server ID
-            let deleteNoteId = operation.entity_id;
+            const deleteLocalId = operation.entity_id; // Queue always uses local_id as entity_id
             
-            // Check if this is a local ID that needs to be converted to server ID
-            if (deleteNoteId.startsWith('local_')) {
-              // This is an edge case - local ID for DELETE without CREATE being processed
-              // We should skip this operation until CREATE is processed
-              return false;
+            // Find server_id by local_id for server operation
+            const deleteServerId = await notesSQLiteService.getServerIdByLocalId(deleteLocalId);
+            if (!deleteServerId) {
+              // Note hasn't been synced to server yet, just remove locally
+              console.log(`⚠️ DELETE: No server_id found for local_id ${deleteLocalId}, removing locally only`);
+              await notesSQLiteService.permanentlyDeleteNote(deleteLocalId);
+              success = true;
+              break;
             }
             
-            await deleteNoteById({ noteId: deleteNoteId, accessToken });
+            // Delete from server using server_id
+            await deleteNoteById({ noteId: deleteServerId, accessToken });
+            
+            // After successful server delete, permanently remove from local database using local_id
+            await notesSQLiteService.permanentlyDeleteNote(deleteLocalId);
+            
             success = true;
             break;
             
           case OPERATION_TYPES.SHARE:
             const sharePayload = JSON.parse(operation.payload || '{}');
+            const shareLocalId = operation.entity_id; // Queue always uses local_id as entity_id
             
-            // For SHARE operations, the entity_id could be local ID or server ID
-            let shareNoteId = operation.entity_id;
-            
-            // Check if this is a local ID that needs to be converted to server ID
-            if (shareNoteId.startsWith('local_')) {
-              // This is an edge case - local ID for SHARE without CREATE being processed
-              // We should skip this operation until CREATE is processed
+            // Find server_id by local_id for server operation
+            const shareServerId = await notesSQLiteService.getServerIdByLocalId(shareLocalId);
+            if (!shareServerId) {
+              // Note hasn't been synced to server yet, skip this operation
+              console.log(`⚠️ SHARE skipped: No server_id found for local_id ${shareLocalId}`);
               return false;
             }
             
+            // Share using server_id
             await shareNoteByEmail({
-              noteId: shareNoteId,
+              noteId: shareServerId,
               requestBody: {
                 email: sharePayload.email,
               },
@@ -324,6 +313,8 @@ export const notesService = {
         );
         
         if (operation.operation_type === OPERATION_TYPES.DELETE && is404Error) {
+          // Note doesn't exist on server, permanently delete from local database
+          await notesSQLiteService.permanentlyDeleteNote(operation.entity_id);
           success = true; // Treat as successful since note doesn't exist anyway
         } else {
           throw apiError; // Re-throw other errors
@@ -347,7 +338,7 @@ export const notesService = {
       
       return success;
     } catch (error: any) {
-      console.error('Error syncing operation:', {
+      console.log('Error syncing operation:', {
         noteId,
         operation: operation?.operation_type,
         error: error.message,
@@ -357,198 +348,118 @@ export const notesService = {
     }
   },
 
-  /**
-   * Sync all pending operations (DISABLED)
-   * 🚨 DISABLED: Sync functionality removed
-   */
   syncAllPending: async (accessToken: string): Promise<{synced: number, failed: number}> => {
-    // 🚨 DISABLED: Sync functionality removed for local-only operation
     return { synced: 0, failed: 0 };
-    
-    /*
-    // TODO: Uncomment for future sync implementation
-    const pendingOperations = await syncQueueService.getPendingOperations();
-    let synced = 0;
-    let failed = 0;
-    
-    for (const operation of pendingOperations) {
-      try {
-        const success = await notesService.trySyncOperation(operation.entity_id, accessToken);
-        if (success) {
-          synced++;
-        } else {
-          failed++;
-          await syncQueueService.incrementRetryCount(operation.id);
-        }
-      } catch (error) {
-        failed++;
-        await syncQueueService.incrementRetryCount(operation.id);
-      }
-    }
-    
-    return { synced, failed };
-    */
   },
 
   /**
-   * Get sync status information (DISABLED - returns mock data)
-   * 🚨 DISABLED: Sync functionality removed
+   * Manual sync all pending operations
+   * ✅ ENABLED: Processes all pending queue operations
+   */
+  manualSyncAllPending: async (accessToken: string): Promise<{synced: number, failed: number}> => {
+    try {
+      const pendingOperations = await syncQueueService.getPendingOperations();
+      
+      if (pendingOperations.length === 0) {
+        return { synced: 0, failed: 0 };
+      }
+
+      let synced = 0;
+      let failed = 0;
+
+      // Process operations in FIFO order - stop on first failure
+      for (const operation of pendingOperations) {
+        try {
+          const success = await notesService.trySyncOperation(operation.entity_id, accessToken);
+          
+          if (success) {
+            await syncQueueService.markOperationCompleted(operation.id);
+            synced++;
+          } else {
+            await syncQueueService.incrementRetryCount(operation.id);
+            failed++;
+            // Stop on first failure to maintain order
+            break;
+          }
+          
+          // Add delay between operations
+          await new Promise(resolve => setTimeout(resolve, 200));
+        } catch (error) {
+          console.log(`Error syncing operation ${operation.id}:`, error);
+          await syncQueueService.incrementRetryCount(operation.id);
+          failed++;
+          // Stop on error to maintain order
+          break;
+        }
+      }
+
+      return { synced, failed };
+    } catch (error) {
+      console.log('Error in manual sync all pending:', error);
+      return { synced: 0, failed: 0 };
+    }
+  },
+
+  /**
+   * Get sync status information
+   * ✅ ENABLED: Returns actual sync status from queue
    */
   getSyncStatus: async (): Promise<{
     hasLocalChanges: boolean;
     pendingOperations: number;
     failedOperations: number;
   }> => {
-    // 🚨 DISABLED: Sync functionality removed for local-only operation
-    return {
-      hasLocalChanges: false,
-      pendingOperations: 0,
-      failedOperations: 0,
-    };
-    
-    /*
-    // TODO: Uncomment for future sync implementation
-    const queueStatus = await syncQueueService.getQueueStatus();
-    
-    return {
-      hasLocalChanges: queueStatus.pending > 0 || queueStatus.failed > 0,
-      pendingOperations: queueStatus.pending,
-      failedOperations: queueStatus.failed,
-    };
-    */
-  },
-
-  /**
-   * Retry failed operations manually (DISABLED)
-   * 🚨 DISABLED: Sync functionality removed
-   */
-  retryFailedOperations: async (accessToken: string): Promise<void> => {
-    // 🚨 DISABLED: Sync functionality removed for local-only operation
-    return;
-    
-    /*
-    // TODO: Uncomment for future sync implementation
-    const failedOperations = await syncQueueService.getFailedOperations();
-    
-    for (const operation of failedOperations) {
-      await syncQueueService.resetFailedOperation(operation.id);
-    }
-    
-    await notesService.syncAllPending(accessToken);
-    */
-  },
-
-  /**
-   * Debug function specifically for duplicate operations (DISABLED)
-   * 🚨 DISABLED: Sync functionality removed
-   */
-  debugDuplicateOperations: async (noteId?: string): Promise<void> => {
-    // 🚨 DISABLED: Sync functionality removed for local-only operation
-    return;
-    
-    /*
-    // TODO: Uncomment for future sync implementation
     try {
-      
-      const pendingOps = await syncQueueService.getPendingOperations();
-      
-      if (noteId) {
-        const noteOps = pendingOps.filter(op => op.entity_id === noteId);
-        noteOps.forEach((op, index) => {
-        });
-      } else {
-        // Group by entity_id and operation_type to find duplicates
-        const grouped: { [key: string]: any[] } = {};
-        pendingOps.forEach(op => {
-          const key = `${op.entity_id}_${op.operation_type}`;
-          if (!grouped[key]) grouped[key] = [];
-          grouped[key].push(op);
-        });
-        
-        Object.entries(grouped).forEach(([key, ops]) => {
-          if (ops.length > 1) {
-            ops.forEach(op => {
-            });
-          }
-        });
-      }
-      
-    } catch (error) {
-      console.error('❌ Error debugging duplicates:', error);
-    }
-    */
-  },
-
-  /**
-   * Debug function to check sync status and queue (DISABLED)
-   * 🚨 DISABLED: Sync functionality removed
-   */
-  debugSyncStatus: async (): Promise<void> => {
-    // 🚨 DISABLED: Sync functionality removed for local-only operation
-    return;
-    
-    /*
-    // TODO: Uncomment for future sync implementation
-    try {
-      
       const queueStatus = await syncQueueService.getQueueStatus();
       
-      const pendingOps = await syncQueueService.getPendingOperations();
-      
-      pendingOps.forEach((op, index) => {
-          id: op.id,
-          type: op.operation_type,
-          entity: op.entity_type,
-          entity_id: op.entity_id,
-          status: op.status,
-          retry_count: op.retry_count,
-          created_at: op.created_at,
-          payload: op.payload
-        });
-      });
-      
-      const failedOps = await syncQueueService.getFailedOperations();
-      
-      failedOps.forEach((op, index) => {
-          id: op.id,
-          type: op.operation_type,
-          entity: op.entity_type,
-          entity_id: op.entity_id,
-          status: op.status,
-          retry_count: op.retry_count,
-          created_at: op.created_at,
-          payload: op.payload
-        });
-      });
-      
+      return {
+        hasLocalChanges: queueStatus.pending > 0 || queueStatus.failed > 0,
+        pendingOperations: queueStatus.pending,
+        failedOperations: queueStatus.failed,
+      };
     } catch (error) {
-      console.error('❌ Error checking sync status:', error);
+      console.log('Error getting sync status:', error);
+      return {
+        hasLocalChanges: false,
+        pendingOperations: 0,
+        failedOperations: 0,
+      };
     }
-    */
   },
 
   /**
-   * Manual refresh notes data (returns local data only)
-   * 🚨 DISABLED: Server sync functionality removed
+   * Retry failed operations manually
+   * ✅ ENABLED: Resets failed operations and triggers sync
+   */
+  retryFailedOperations: async (accessToken: string): Promise<void> => {
+    try {
+      const failedOperations = await syncQueueService.getFailedOperations();
+      
+      for (const operation of failedOperations) {
+        await syncQueueService.resetFailedOperation(operation.id);
+      }
+      
+      await notesService.manualSyncAllPending(accessToken);
+    } catch (error) {
+      console.log('Error retrying failed operations:', error);
+    }
+  },
+
+  /**
+   * Manual refresh notes data - syncs pending changes then fetches from server
+   * ✅ ENABLED: Full sync and refresh functionality
    */
   refreshNotes: async (accessToken: string, userId: string): Promise<Note[]> => {
-    // 🚨 DISABLED: Server sync functionality removed for local-only operation
-    return await notesService.loadNotesFromLocal(userId);
-    
-    /*
-    // TODO: Uncomment for future server sync implementation
     try {
-      
       // First sync any pending changes
       await notesService.manualSyncAllPending(accessToken);
       
       // Then fetch fresh data from server manually
       return await notesService.fetchNotesFromServerManually(accessToken, userId);
     } catch (error) {
-      console.error('❌ Error in manual refresh:', error);
+      console.log('Error in manual refresh:', error);
       // Fallback to local data
       return await notesService.loadNotesFromLocal(userId);
     }
-    */
   },
 }; 

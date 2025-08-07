@@ -104,7 +104,7 @@ export const useSettings = ({ autoRecovery = false, recoveryReason = '' }: UseSe
         }
       } else {
         setClearDataState('failed');
-        console.error('❌ Clear data operation failed:', result.error);
+        console.log('Clear data operation failed:', result.error);
         Alert.alert(
           'Clear Failed', 
           result.error || 'Failed to clear data. Please try again.',
@@ -113,7 +113,7 @@ export const useSettings = ({ autoRecovery = false, recoveryReason = '' }: UseSe
       }
     } catch (error) {
       setClearDataState('failed');
-      console.error('❌ Clear data operation error:', error);
+      console.log('Clear data operation error:', error);
       Alert.alert(
         'Clear Failed',
         'An unexpected error occurred. Please try again.',
@@ -130,7 +130,7 @@ export const useSettings = ({ autoRecovery = false, recoveryReason = '' }: UseSe
     
     try {
       if (!authState.accessToken) {
-        console.error('❌ No access token available for recovery');
+        console.log('No access token available for recovery');
         setRecoverDataState('failed');
         setTimeout(() => setRecoverDataState('idle'), 2000);
         return;
@@ -169,11 +169,11 @@ export const useSettings = ({ autoRecovery = false, recoveryReason = '' }: UseSe
         
         setRecoverDataState('completed');
       } else {
-        console.error('❌ Recovery from BACKEND SERVER failed:', recoveryResult.error);
+        console.log('Recovery from BACKEND SERVER failed:', recoveryResult.error);
         setRecoverDataState('failed');
       }
     } catch (error) {
-      console.error('❌ Recovery operation error:', error);
+      console.log('Recovery operation error:', error);
       setRecoverDataState('failed');
     }
     
@@ -184,7 +184,7 @@ export const useSettings = ({ autoRecovery = false, recoveryReason = '' }: UseSe
   const refreshDataFromLocalDatabase = async () => {
     try {
       if (!authState.id) {
-        console.error('❌ No user ID available for data refresh');
+        console.log('No user ID available for data refresh');
         return;
       }
 
@@ -202,7 +202,7 @@ export const useSettings = ({ autoRecovery = false, recoveryReason = '' }: UseSe
       dispatch(setAllNotes(notes));
       dispatch(setAllBookmarks(bookmarks));
     } catch (error) {
-      console.error('❌ Error refreshing data from local database:', error);
+      console.log('Error refreshing data from local database:', error);
     }
   };
 

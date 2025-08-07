@@ -54,13 +54,13 @@ export const useAllNotes = () => {
       const newStates = new Map<string, boolean>();
       
       for (const note of notes) {
-        const isBookmarked = await bookmarksSQLiteService.isNoteBookmarked(note.id, authState.id);
-        newStates.set(note.id, isBookmarked);
+        const isBookmarked = await bookmarksSQLiteService.isNoteBookmarked(note.local_id, authState.id);
+        newStates.set(note.local_id, isBookmarked);
       }
       
       setBookmarkStates(newStates);
     } catch (error) {
-      console.error('❌ Error loading bookmark states:', error);
+      console.log('Error loading bookmark states:', error);
     }
   }, [notes, authState?.id]);
 
@@ -86,7 +86,7 @@ export const useAllNotes = () => {
         });
         return dbState;
       } catch (error) {
-        console.error('❌ Error checking bookmark state from database:', error);
+        console.log('Error checking bookmark state from database:', error);
       }
     }
     
@@ -134,7 +134,7 @@ export const useAllNotes = () => {
       return { success: true };
 
     } catch (error: any) {
-      console.error(`❌ OPTIMISTIC ${operation} FAILED - Reverting UI:`, error);
+      console.log(`Optimistic ${operation} failed - reverting UI:`, error);
       
       // STEP 4: REVERT UI ON FAILURE
       setBookmarkStates(prev => {
@@ -151,7 +151,7 @@ export const useAllNotes = () => {
         const freshBookmarks = await bookmarksSQLiteService.fetchBookmarkedNotes(authState.id);
         dispatch(setAllBookmarks(freshBookmarks));
       } catch (restoreError) {
-        console.error('❌ Failed to restore Redux state:', restoreError);
+        console.log('Failed to restore Redux state:', restoreError);
       }
       
       return { success: false, error: error.message || `Failed to ${operation.toLowerCase()} bookmark` };
@@ -167,7 +167,7 @@ export const useAllNotes = () => {
     }
 
     // Additional ownership validation at hook level
-    const noteToDelete = notes.find(note => note.id === noteId || note.local_id === noteId);
+    const noteToDelete = notes.find(note => note.local_id === noteId);
     const ownershipValidation = validateNoteOwnership(noteToDelete || null, authState.id);
     
     if (!ownershipValidation.isOwner) {
@@ -197,17 +197,17 @@ export const useAllNotes = () => {
             const freshNotes = await notesSQLiteService.fetchAllNotes(authState.id);
             dispatch(setAllNotes(freshNotes));
           } catch (refreshError) {
-            console.error('⚠️ Post-delete refresh failed:', refreshError);
+            console.log('Post-delete refresh failed:', refreshError);
           }
         }, 500);
         
         return { success: true };
       } else {
-        console.error('❌ Delete operation failed:', result.error);
+        console.log('Delete operation failed:', result.error);
         return { success: false, error: result.error };
       }
     } catch (error: any) {
-      console.error('❌ Unexpected error during delete:', error);
+      console.log('Unexpected error during delete:', error);
       
       // Attempt to restore Redux state if delete failed
       try {
@@ -217,7 +217,7 @@ export const useAllNotes = () => {
         const freshBookmarks = await bookmarksSQLiteService.fetchBookmarkedNotes(authState.id);
         dispatch(setAllBookmarks(freshBookmarks));
       } catch (restoreError) {
-        console.error('❌ Failed to restore Redux state:', restoreError);
+        console.log('Failed to restore Redux state:', restoreError);
       }
       
       return { success: false, error: error.message || 'Failed to delete note' };
@@ -251,7 +251,7 @@ export const useAllNotes = () => {
       await loadBookmarkStates();
       
     } catch (error: any) {
-      console.error('❌ Error refreshing notes:', error);
+      console.log('Error refreshing notes:', error);
       dispatch(setNotesError(error.message || 'Failed to refresh notes'));
     } finally {
       dispatch(setNotesRefreshing(false));

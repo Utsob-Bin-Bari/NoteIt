@@ -24,8 +24,8 @@ export const bookmarksSQLiteService = {
             for (let i = 0; i < result.rows.length; i++) {
               const row = result.rows.item(i);
               notes.push({
-                id: row.id,
                 local_id: row.local_id,
+                server_id: row.server_id,
                 title: row.title,
                 details: row.details,
                 owner_id: row.owner_id,
@@ -38,7 +38,7 @@ export const bookmarksSQLiteService = {
             resolve(notes);
           },
           (_, error) => {
-            console.error('Error fetching bookmarked notes:', error);
+            console.log('Error fetching bookmarked notes:', error);
             reject(error);
             return false;
           }
@@ -59,8 +59,8 @@ export const bookmarksSQLiteService = {
       db.transaction(tx => {
         // First get current bookmarked_by array (SUPPORT BOTH ID TYPES)
         tx.executeSql(
-          `SELECT bookmarked_by FROM notes WHERE id = ? OR local_id = ?`,
-          [noteId, noteId],
+          `SELECT bookmarked_by FROM notes WHERE local_id = ?`,
+          [noteId],
           (_, result) => {
             if (result.rows.length === 0) {
               reject(new Error('Note not found'));
@@ -83,26 +83,25 @@ export const bookmarksSQLiteService = {
                sync_status = ?, 
                local_updated_at = ?, 
                needs_sync = 1 
-               WHERE id = ? OR local_id = ?`,
+               WHERE local_id = ?`,
               [
                 DatabaseHelpers.arrayToJson(currentBookmarks),
                 SYNC_STATUS.PENDING,
                 timestamp,
-                noteId,
                 noteId
               ],
               (_, result) => {
                 resolve(); // Always resolve - supports redundant operations
               },
               (_, error) => {
-                console.error('Error adding bookmark:', error);
+                console.log('Error adding bookmark:', error);
                 reject(error);
                 return false;
               }
             );
           },
           (_, error) => {
-            console.error('Error fetching note for bookmark:', error);
+            console.log('Error fetching note for bookmark:', error);
             reject(error);
             return false;
           }
@@ -123,8 +122,8 @@ export const bookmarksSQLiteService = {
       db.transaction(tx => {
         // First get current bookmarked_by array (SUPPORT BOTH ID TYPES)
         tx.executeSql(
-          `SELECT bookmarked_by FROM notes WHERE id = ? OR local_id = ?`,
-          [noteId, noteId],
+          `SELECT bookmarked_by FROM notes WHERE local_id = ?`,
+          [noteId],
           (_, result) => {
             if (result.rows.length === 0) {
               reject(new Error('Note not found'));
@@ -145,26 +144,25 @@ export const bookmarksSQLiteService = {
                sync_status = ?, 
                local_updated_at = ?, 
                needs_sync = 1 
-               WHERE id = ? OR local_id = ?`,
+               WHERE local_id = ?`,
               [
                 DatabaseHelpers.arrayToJson(updatedBookmarks),
                 SYNC_STATUS.PENDING,
                 timestamp,
-                noteId,
                 noteId
               ],
               (_, result) => {
                 resolve(); // Always resolve - supports redundant operations
               },
               (_, error) => {
-                console.error('Error removing bookmark:', error);
+                console.log('Error removing bookmark:', error);
                 reject(error);
                 return false;
               }
             );
           },
           (_, error) => {
-            console.error('Error fetching note for unbookmark:', error);
+            console.log('Error fetching note for unbookmark:', error);
             reject(error);
             return false;
           }
@@ -182,8 +180,8 @@ export const bookmarksSQLiteService = {
     return new Promise((resolve, reject) => {
       db.transaction(tx => {
         tx.executeSql(
-          `SELECT bookmarked_by FROM notes WHERE id = ? OR local_id = ?`,
-          [noteId, noteId],
+          `SELECT bookmarked_by FROM notes WHERE local_id = ?`,
+          [noteId],
           (_, result) => {
             if (result.rows.length === 0) {
               resolve(false);
@@ -195,7 +193,7 @@ export const bookmarksSQLiteService = {
             resolve(bookmarkedBy.includes(userId));
           },
           (_, error) => {
-            console.error('Error checking bookmark status:', error);
+            console.log('Error checking bookmark status:', error);
             reject(error);
             return false;
           }
@@ -217,13 +215,13 @@ export const bookmarksSQLiteService = {
            sync_status = ?, 
            needs_sync = 0, 
            local_updated_at = NULL 
-           WHERE id = ? OR local_id = ?`,
+           WHERE local_id = ?`,
           [SYNC_STATUS.SYNCED, noteId, noteId],
           (_, result) => {
             resolve();
           },
           (_, error) => {
-            console.error('Error marking bookmark as synced:', error);
+            console.log('Error marking bookmark as synced:', error);
             reject(error);
             return false;
           }
@@ -265,7 +263,7 @@ export const bookmarksSQLiteService = {
             resolve(operations);
           },
           (_, error) => {
-            console.error('Error fetching bookmark operations needing sync:', error);
+            console.log('Error fetching bookmark operations needing sync:', error);
             reject(error);
             return false;
           }

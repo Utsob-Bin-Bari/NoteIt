@@ -40,7 +40,7 @@ export const shareNote = async (
     // Step 2: Update local SQLite database
     // First get the current note to update shared_with array
     const notes = await notesSQLiteService.fetchAllNotes(userId);
-    const currentNote = notes.find(note => note.id === noteId || note.local_id === noteId);
+    const currentNote = notes.find(note => note.local_id === noteId);
     
     if (!currentNote) {
       return {
@@ -101,7 +101,7 @@ export const shareNote = async (
     };
 
   } catch (error) {
-    console.error('❌ Error sharing note:', error);
+    console.log('❌ Error sharing note:', error);
     return {
       success: false,
       error: 'Failed to share note. Please try again.'

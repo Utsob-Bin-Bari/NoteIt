@@ -16,12 +16,8 @@ import { RootState } from '../../domain/types/store/RootState';
 const HomeScreen = ({ navigation }: any) => {
   const { theme, toggleTheme } = useContext(AppContext) as { theme: ThemeType, toggleTheme: () => void };
   const colors = getColors(theme);
-  
-  // Get counts from Redux store with NULL SAFETY CHECKS (Our agreed plan)
   const notesData = useSelector((state: RootState) => state.notes?.data);
   const bookmarksData = useSelector((state: RootState) => state.bookmarks?.data);
-  
-  // Null safety: Ensure data is array before accessing .length
   const notesCount = Array.isArray(notesData) ? notesData.length : 0;
   const bookmarksCount = Array.isArray(bookmarksData) ? bookmarksData.length : 0;
   
@@ -66,24 +62,22 @@ const HomeScreen = ({ navigation }: any) => {
     <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
       <View style={GlobalStyles(theme).mainContainer}>
         <View style={[GlobalStyles(theme).container, { width: '90%' }]}>
-          <View style={{ paddingBottom:0}}>
-                        <SearchInput
-                value={searchQuery}
-                onChangeText={handleSearchChange}
-                placeholder="Search notes by title"
-                isFilterActive={isFilterActive}
-                onFilterPress={handleFilterToggle}
-              />
-            <ToggleSwitch
-              leftOption={`All Notes (${notesCount})`}
-              rightOption={`Bookmarks (${bookmarksCount})`}
-              isRightSelected={showBookmarks}
-              onToggle={handleToggleView}
-            />
-          </View>
-          
-          {/* FlashList components handle their own scrolling - no ScrollView wrapper needed */}
-                    {showBookmarks ? (
+          <SearchInput
+            stylesProps={{marginBottom:10}}
+            value={searchQuery}
+            onChangeText={handleSearchChange}
+            placeholder="Search notes by title"
+            isFilterActive={isFilterActive}
+            onFilterPress={handleFilterToggle}
+          />
+          <ToggleSwitch
+            leftOption={`All Notes (${notesCount})`}
+            rightOption={`Bookmarks (${bookmarksCount})`}
+            isRightSelected={showBookmarks}
+            onToggle={handleToggleView}
+          />
+
+          {showBookmarks ? (
               <AllBookmarksComponent 
                 navigation={navigation} 
                 searchQuery={searchQuery} 

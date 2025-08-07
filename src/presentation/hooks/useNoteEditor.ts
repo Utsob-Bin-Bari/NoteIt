@@ -62,7 +62,7 @@ export const useNoteEditor = () => {
         setError('Note not found');
       }
     } catch (error) {
-      console.error('❌ Error loading note data:', error);
+      console.log('Error loading note data:', error);
       setError('Failed to load note');
     } finally {
       setLoading(false);
@@ -109,7 +109,7 @@ export const useNoteEditor = () => {
           );
         } else if (result.conflictInfo?.conflictDetails && result.conflictInfo.conflictDetails.length > 0) {
           // Show successful merge information (non-intrusive)
-          console.error('Note synchronized successfully:', result.conflictInfo.conflictDetails);
+          console.log('Note synchronized successfully:', result.conflictInfo.conflictDetails);
         }
         
         // Note: Redux is already updated by the service, no need for additional refresh
@@ -133,7 +133,7 @@ export const useNoteEditor = () => {
         return false;
       }
     } catch (error) {
-      console.error('❌ Error saving note:', error);
+      console.log('Error saving note:', error);
       setError('Failed to save note');
       return false;
     } finally {

@@ -1,11 +1,13 @@
 import React, { useContext } from 'react';
-import { View, TextInput, TouchableOpacity, Keyboard } from 'react-native';
+import { View, TextInput, TouchableOpacity, Keyboard, StyleProp, ViewStyle } from 'react-native';
 import { AppContext } from '../../application/context/AppContext';
 import { ThemeType } from '../../domain/types/theme/theme';
 import { getColors } from '../constants/Colors';
 import { SearchIcon, FilterIcon } from './icons';
+import { GlobalStyles } from '../styles/GlobalStyles';
 
 interface SearchInputProps {
+  stylesProps?: StyleProp<ViewStyle>;
   value: string;
   onChangeText: (text: string) => void;
   placeholder?: string;
@@ -14,6 +16,7 @@ interface SearchInputProps {
 }
 
 const SearchInput: React.FC<SearchInputProps> = ({
+  stylesProps,
   value,
   onChangeText,
   placeholder = "Search notes by title",
@@ -24,40 +27,12 @@ const SearchInput: React.FC<SearchInputProps> = ({
   const colors = getColors(theme);
 
   return (
-    <View style={{
-      flexDirection: 'row',
-      width: '100%',
-      height: 40,
-      borderRadius: 8,
-      borderWidth: 1,
-      borderColor: colors.border,
-      backgroundColor: colors.inputBackground,
-      overflow: 'hidden',
-      marginBottom: 10,
-    }}>
-      {/* Search Icon - Left Side */}
-      <View
-        style={{
-          width: 50,
-          height: 40,
-          alignItems: 'center',
-          justifyContent: 'center',
-          borderRightWidth: 1,
-          borderRightColor: colors.border,
-        }}
-      >
+    <View style={[GlobalStyles(theme).searchInputContainer,stylesProps]}>
+      <View style={[GlobalStyles(theme).searchOrFilterIconContainer,{borderRightWidth:1,borderRightColor:colors.border}]}>
         <SearchIcon width={20} height={20} />
       </View>
-      
-      {/* Text Input */}
       <TextInput
-        style={{
-          flex: 1,
-          height: 40,
-          paddingHorizontal: 16,
-          fontSize: 16,
-          color: colors.text,
-        }}
+        style={GlobalStyles(theme).searchTextContainer}
         value={value}
         onChangeText={onChangeText}
         placeholder={placeholder}
@@ -65,27 +40,13 @@ const SearchInput: React.FC<SearchInputProps> = ({
         selectionColor={colors.primary}
         returnKeyType="search"
         onSubmitEditing={Keyboard.dismiss}
-        blurOnSubmit={true}
       />
       
       {/* Filter Icon - Right Side */}
       <TouchableOpacity
         onPress={onFilterPress}
-        style={{
-          width: 50,
-          height: 40,
-          alignItems: 'center',
-          justifyContent: 'center',
-          borderLeftWidth: 1,
-          borderLeftColor: colors.border,
-          backgroundColor: isFilterActive ? colors.primary + '20' : 'transparent',
-        }}
-      >
-        <FilterIcon 
-          width={20} 
-          height={20} 
-          color={isFilterActive ? colors.primary : colors.iconGrey}
-        />
+        style={[GlobalStyles(theme).searchOrFilterIconContainer,{borderLeftWidth:1,borderLeftColor:colors.border,backgroundColor:isFilterActive ? colors.primary + '20' : 'transparent'}]}>
+        <FilterIcon width={20} height={20} color={isFilterActive ? colors.primary : colors.iconGrey}/>
       </TouchableOpacity>
     </View>
   );

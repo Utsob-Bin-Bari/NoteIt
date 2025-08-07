@@ -1,9 +1,16 @@
-import { syncQueueService } from './syncQueueService';
+import { syncQueueService, QueueOperation } from './syncQueueService';
 import { notesService } from './notesService';
 import { bookmarksService } from '../bookmarks/bookmarksService';
 import { NetworkService } from '../../../infrastructure/utils/NetworkService';
 import { userSessionStorage } from '../../../infrastructure/storage/userSessionStorage';
-import { OPERATION_TYPES } from '../../../infrastructure/storage/DatabaseSchema';
+import { OPERATION_TYPES, DatabaseHelpers } from '../../../infrastructure/storage/DatabaseSchema';
+import { notesSQLiteService } from './notesSQLiteService';
+import { createNewNote } from '../../../infrastructure/api/requests/notes/createNewNote';
+import { updateNoteById } from '../../../infrastructure/api/requests/notes/updateNoteById';
+import { deleteNoteById } from '../../../infrastructure/api/requests/notes/deleteNoteById';
+import { shareNoteByEmail } from '../../../infrastructure/api/requests/notes/shareNoteByEmail';
+import { createBookmark } from '../../../infrastructure/api/requests/bookmarks/createBookmark';
+import { deleteBookmark } from '../../../infrastructure/api/requests/bookmarks/deleteBookmark';
 
 interface SyncProcessor {
   isRunning: boolean;
@@ -13,7 +20,7 @@ interface SyncProcessor {
 
 /**
  * Background sync processor that handles queue processing and app restart recovery
- * ✅ ENABLED: Auto-sync functionality active with FIFO queue processing
+ * ✅ ENABLED: Full FIFO queue processing with local_id to server_id mapping and stop-on-failure
  */
 export const syncProcessor: SyncProcessor = {
   isRunning: false,
@@ -99,25 +106,32 @@ const processQueueOnce = async (): Promise<void> => {
     for (const operation of pendingOperations) {
       try {
         let success = false;
-
-        // Route to appropriate service based on operation type
-        if (operation.entity_type === 'note' && 
-            (operation.operation_type === OPERATION_TYPES.BOOKMARK || operation.operation_type === OPERATION_TYPES.UNBOOKMARK)) {
-          // Handle bookmark operations
-          success = await bookmarksService.trySyncBookmarkOperation(operation.entity_id, accessToken);
-        } else if (operation.entity_type === 'note') {
-          // Handle note operations (create, update, delete, share)
-          success = await notesService.trySyncOperation(operation.entity_id, accessToken);
+        
+        // Add small delay before each operation to prevent database race conditions
+        await new Promise(resolve => setTimeout(resolve, 100));
+        
+        // Process different operation types with proper local_id to server_id mapping
+        if (operation.operation_type === OPERATION_TYPES.CREATE) {
+          success = await processCreateOperation(operation, accessToken);
+        } else if (operation.operation_type === OPERATION_TYPES.UPDATE) {
+          success = await processUpdateOperation(operation, accessToken);
+        } else if (operation.operation_type === OPERATION_TYPES.DELETE) {
+          success = await processDeleteOperation(operation, accessToken);
+        } else if (operation.operation_type === 'bookmark' || operation.operation_type === 'unbookmark') {
+          success = await processBookmarkOperation(operation, accessToken);
+        } else if (operation.operation_type === 'share') {
+          success = await processShareOperation(operation, accessToken);
         } else {
-          // Unknown operation type - mark as failed
+          console.log(`Unknown operation type: ${operation.operation_type}`);
           success = false;
         }
 
         if (success) {
           processedCount++;
+          await syncQueueService.markOperationCompleted(operation.id);
           
-          // Small delay between successful operations to avoid overwhelming the server
-          await new Promise(resolve => setTimeout(resolve, 100));
+          // Longer delay after successful operations to ensure database consistency
+          await new Promise(resolve => setTimeout(resolve, 200));
         } else {
           // 🛑 STOP PROCESSING QUEUE when operation fails (likely dependency issue)
           // This prevents dependent operations from being marked as failed
@@ -137,16 +151,11 @@ const processQueueOnce = async (): Promise<void> => {
             await syncQueueService.incrementRetryCount(operation.id);
           }
           
-          console.warn(`⚠️ SYNC QUEUE STOPPED at operation ${operation.id} (${operation.operation_type}) - dependencies may not be ready, will retry in next cycle`);
+
           break; // Stop processing remaining operations
         }
-
       } catch (error) {
-        console.error(`❌ SYNC ERROR processing operation ${operation.id}:`, {
-          operation: operation,
-          error: error,
-          message: error instanceof Error ? error.message : 'Unknown error'
-        });
+        console.log(`Error processing sync operation ${operation.id}:`, error);
         
         // 🛑 STOP PROCESSING QUEUE on error to preserve operation order
         await syncQueueService.incrementRetryCount(operation.id);
@@ -156,7 +165,7 @@ const processQueueOnce = async (): Promise<void> => {
     }
 
   } catch (error) {
-    console.error('Error in sync processor:', error);
+    console.log('Error in sync processor:', error);
   } finally {
     syncProcessor.processingCount--;
   }
@@ -183,26 +192,21 @@ export const triggerImmediateSync = async (): Promise<{processed: number, failed
 };
 
 /**
- * Get sync processor status (DISABLED - returns static status for UI)
- * 🚨 DISABLED: Auto-sync functionality removed - return mock status for UI
+ * Get sync processor status
+ * ✅ ENABLED: Returns actual processor status
  */
 export const getSyncProcessorStatus = (): { isRunning: boolean; isProcessing: boolean } => {
   return {
-    isRunning: false, // Always false since auto-sync is disabled
-    isProcessing: false, // Always false since auto-sync is disabled
+    isRunning: syncProcessor.isRunning,
+    isProcessing: syncProcessor.processingCount > 0,
   };
 };
 
 /**
- * Initialize sync processor on app start (DISABLED for local-only operation)
- * 🚨 DISABLED: Auto-sync functionality removed
+ * Initialize sync processor on app start
+ * ✅ ENABLED: Starts sync processor and handles previous session recovery
  */
 export const initializeSyncProcessor = async (): Promise<void> => {
-  // 🚨 DISABLED: Auto-sync functionality removed for local-only operation
-  return;
-  
-  /*
-  // TODO: Uncomment for future auto-sync implementation
   try {
     // Check if we have any pending operations from previous session
     const queueStatus = await syncQueueService.getQueueStatus();
@@ -219,9 +223,8 @@ export const initializeSyncProcessor = async (): Promise<void> => {
     await startSyncProcessor();
     
   } catch (error) {
-    console.error('❌ Error initializing sync processor:', error);
+    console.log('Error initializing sync processor:', error);
   }
-  */
 };
 
 /**
@@ -241,27 +244,197 @@ export const manualProcessQueue = async (): Promise<{processed: number, failed: 
       failed: queueStatus.failed || 0 
     };
   } catch (error) {
-    console.error('❌ Error in manual queue processing:', error);
+    console.log('Error in manual queue processing:', error);
     return { processed: 0, failed: 0 };
   }
 };
 
 /**
- * Manual sync all pending operations (DISABLED - returns mock data for UI)
- * 🚨 DISABLED: Auto-sync functionality removed - return mock data for UI
+ * Manual sync all pending operations
+ * ✅ ENABLED: Processes all pending operations in queue
  */
 export const manualSyncAllPending = async (accessToken: string): Promise<{processed: number, failed: number}> => {
-  // 🚨 DISABLED: Auto-sync functionality removed for local-only operation
-  return Promise.resolve({ processed: 0, failed: 0 });
-  
-  /*
-  // TODO: Uncomment for future auto-sync implementation
   try {
-    const result = await notesService.syncAllPending(accessToken);
+    const result = await notesService.manualSyncAllPending(accessToken);
     return { processed: result.synced, failed: result.failed };
   } catch (error) {
-    console.error('Error in manual sync all:', error);
+    console.log('Error in manual sync all:', error);
     return { processed: 0, failed: 0 };
   }
-  */
+};
+
+/**
+ * Process CREATE operation - uses local_id, gets server_id back, stores it
+ */
+const processCreateOperation = async (operation: QueueOperation, accessToken: string): Promise<boolean> => {
+  try {
+    const payload = operation.payload ? JSON.parse(operation.payload) : null;
+    if (!payload) {
+      console.log('CREATE operation missing payload');
+      return false;
+    }
+
+    // Create on server using payload data
+    const result = await createNewNote({
+      requestBody: {
+        title: payload.title,
+        details: payload.details,
+      },
+      accessToken
+    });
+
+    if (result.note?.id) {
+      // Store server_id in local note using local_id (entity_id)
+      await notesSQLiteService.updateServerIdByLocalId(operation.entity_id, result.note.id);
+
+      return true;
+    }
+
+    return false;
+  } catch (error) {
+    console.log(`Error in CREATE operation:`, error);
+    return false;
+  }
+};
+
+/**
+ * Process UPDATE operation - maps local_id to server_id, then calls API
+ */
+const processUpdateOperation = async (operation: QueueOperation, accessToken: string): Promise<boolean> => {
+  try {
+    // Get server_id from local_id
+    const serverId = await notesSQLiteService.getServerIdByLocalId(operation.entity_id);
+    if (!serverId) {
+      console.log(`UPDATE operation failed: no server_id for local_id=${operation.entity_id}`);
+      return false;
+    }
+
+    const payload = operation.payload ? JSON.parse(operation.payload) : null;
+    if (!payload) {
+      console.log('UPDATE operation missing payload');
+      return false;
+    }
+
+    // Update on server using server_id
+    const result = await updateNoteById({
+      noteId: serverId,
+      requestBody: {
+        title: payload.title,
+        details: payload.details,
+      },
+      accessToken
+    });
+
+    if (result.note) {
+
+      return true;
+    }
+
+    return false;
+  } catch (error) {
+    console.log(`Error in UPDATE operation:`, error);
+    return false;
+  }
+};
+
+/**
+ * Process DELETE operation - maps local_id to server_id, calls API, then removes local
+ */
+const processDeleteOperation = async (operation: QueueOperation, accessToken: string): Promise<boolean> => {
+  try {
+    // Get server_id from local_id
+    const serverId = await notesSQLiteService.getServerIdByLocalId(operation.entity_id);
+    if (!serverId) {
+      console.log(`DELETE operation failed: no server_id for local_id=${operation.entity_id}`);
+      return false;
+    }
+
+    // Delete from server using server_id
+    const result = await deleteNoteById({
+      noteId: serverId,
+      accessToken
+    });
+
+    if (result.message) {
+      // Permanently delete from local storage
+      await notesSQLiteService.permanentlyDeleteNote(operation.entity_id);
+
+      return true;
+    }
+
+    return false;
+  } catch (error) {
+    console.log(`Error in DELETE operation:`, error);
+    return false;
+  }
+};
+
+/**
+ * Process BOOKMARK/UNBOOKMARK operation - maps local_id to server_id
+ */
+const processBookmarkOperation = async (operation: QueueOperation, accessToken: string): Promise<boolean> => {
+  try {
+    // Get server_id from local_id
+    const serverId = await notesSQLiteService.getServerIdByLocalId(operation.entity_id);
+    if (!serverId) {
+      console.log(`BOOKMARK operation failed: no server_id for local_id=${operation.entity_id}`);
+      return false;
+    }
+
+    let result;
+    if (operation.operation_type === 'bookmark') {
+      result = await createBookmark({ noteId: serverId, accessToken });
+    } else {
+      result = await deleteBookmark({ noteId: serverId, accessToken });
+    }
+
+    if (result.message) {
+
+      return true;
+    }
+
+    return false;
+  } catch (error) {
+    console.log(`Error in BOOKMARK operation:`, error);
+    return false;
+  }
+};
+
+/**
+ * Process SHARE operation - maps local_id to server_id
+ */
+const processShareOperation = async (operation: QueueOperation, accessToken: string): Promise<boolean> => {
+  try {
+    // Get server_id from local_id
+    const serverId = await notesSQLiteService.getServerIdByLocalId(operation.entity_id);
+    if (!serverId) {
+      console.log(`SHARE operation failed: no server_id for local_id=${operation.entity_id}`);
+      return false;
+    }
+
+    const payload = operation.payload ? JSON.parse(operation.payload) : null;
+    if (!payload?.email) {
+      console.log('SHARE operation missing email in payload');
+      return false;
+    }
+
+    // Share on server using server_id
+    const result = await shareNoteByEmail({
+      noteId: serverId,
+      requestBody: {
+        email: payload.email,
+      },
+      accessToken
+    });
+
+    if (result.note) {
+
+      return true;
+    }
+
+    return false;
+  } catch (error) {
+    console.log(`Error in SHARE operation:`, error);
+    return false;
+  }
 }; 

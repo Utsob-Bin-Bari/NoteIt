@@ -165,7 +165,7 @@ const BookmarkItem: React.FC<BookmarkItemProps> = React.memo(({
   }, (prevProps, nextProps) => {
   // Custom comparison function that properly handles theme changes
   return (
-    prevProps.item.id === nextProps.item.id &&
+    prevProps.item.local_id === nextProps.item.local_id &&
     prevProps.item.title === nextProps.item.title &&
     prevProps.item.updated_at === nextProps.item.updated_at &&
     prevProps.showSharedUsers === nextProps.showSharedUsers &&
@@ -238,9 +238,9 @@ const AllBookmarksComponent: React.FC<AllBookmarksComponentProps> = ({
     return validBookmarks;
   }, [bookmarksData, searchQuery, isFilterActive, currentUserId]);
 
-  // BULLETPROOF KEY EXTRACTOR: Handle both server IDs and local IDs
+  // BULLETPROOF KEY EXTRACTOR: Use local_id as primary key
   const safeKeyExtractor = useMemo(() => (item: any) => {
-    const key = item.id || item.local_id || `bookmark_${Date.now()}_${Math.random()}`;
+    const key = item.local_id || `bookmark_${Date.now()}_${Math.random()}`;
     return String(key); // Ensure always returns string
   }, []);
 
@@ -248,14 +248,14 @@ const AllBookmarksComponent: React.FC<AllBookmarksComponentProps> = ({
    * Handle bookmark press to navigate to editor
    */
   const handleBookmarkPress = React.useCallback((bookmark: any) => {
-    const noteId = bookmark.id || bookmark.local_id;
+    const noteId = bookmark.local_id; // Always use local_id for UI operations
     const noteTitle = bookmark.title || 'Untitled Note';
     
     if (noteId) {
       // Navigate to Note screen with noteId parameter
       navigation.navigate('Note', { noteId, title: noteTitle });
     } else {
-      console.error('❌ Cannot navigate - bookmark has no valid ID');
+      console.error('❌ Cannot navigate - bookmark has no valid local_id');
     }
   }, [navigation]);
 
@@ -264,7 +264,7 @@ const AllBookmarksComponent: React.FC<AllBookmarksComponentProps> = ({
    */
   const handleBookmarkToggle = async (bookmark: any) => {
     const noteTitle = bookmark.title || 'Untitled Note';
-    const noteId = bookmark.id || bookmark.local_id;
+    const noteId = bookmark.local_id; // Always use local_id for UI operations
     
     // NO CONFIRMATION ALERT - Direct removal with optimistic UI
     try {
@@ -308,8 +308,8 @@ const AllBookmarksComponent: React.FC<AllBookmarksComponentProps> = ({
    * Handle info icon press to toggle shared users visibility
    */
   const handleInfoPress = useCallback((bookmark: any) => {
-    // Use same ID resolution as other functions
-    const bookmarkId = bookmark.id || bookmark.local_id || `bookmark_${Date.now()}_${Math.random()}`;
+    // Always use local_id for UI operations
+    const bookmarkId = bookmark.local_id;
     setVisibleSharedUsers(prev => {
       const newSet = new Set(prev);
       if (newSet.has(bookmarkId)) {
@@ -336,7 +336,7 @@ const AllBookmarksComponent: React.FC<AllBookmarksComponentProps> = ({
     }
 
     // Use same ID resolution as other functions
-    const bookmarkId = bookmark.id || bookmark.local_id || `bookmark_${Date.now()}_${Math.random()}`;
+    const bookmarkId = bookmark.local_id;
     setVisibleShareInput(prev => {
       const newSet = new Set(prev);
       if (newSet.has(bookmarkId)) {
@@ -352,7 +352,7 @@ const AllBookmarksComponent: React.FC<AllBookmarksComponentProps> = ({
    * Handle bookmark sharing
    */
   const handleShare = useCallback(async (bookmark: any, email: string): Promise<{ success: boolean; error?: string }> => {
-    const bookmarkId = bookmark.id || bookmark.local_id;
+    const bookmarkId = bookmark.local_id; // Always use local_id for UI operations
     
     try {
       // Import shareNote service
@@ -382,7 +382,7 @@ const AllBookmarksComponent: React.FC<AllBookmarksComponentProps> = ({
   // Memoize renderItem to prevent unnecessary re-creations
   const renderItem = useCallback(({ item }: { item: any }) => {
     // Use same ID resolution as safeKeyExtractor
-    const itemId = item.id || item.local_id || `bookmark_${Date.now()}_${Math.random()}`;
+    const itemId = item.local_id;
     const showSharedUsers = visibleSharedUsers.has(itemId);
     const showShareInput = visibleShareInput.has(itemId);
     

@@ -39,7 +39,7 @@ export class DatabaseInit {
       return this.db;
 
     } catch (error) {
-      console.error('❌ Database initialization failed:', error);
+      console.log('❌ Database initialization failed:', error);
       throw error;
     }
   }
@@ -145,7 +145,7 @@ export class DatabaseInit {
 
       return true;
     } catch (error) {
-      console.error('❌ Database health check failed:', error);
+      console.log('❌ Database health check failed:', error);
       return false;
     }
   }

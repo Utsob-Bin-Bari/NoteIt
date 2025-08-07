@@ -15,7 +15,7 @@ export const deleteNoteById = async({noteId, accessToken}:{noteId:string, access
 
         return response.data as DeleteNoteResponse;
     }catch(error: any){
-        console.error('❌ Delete note API error:', {
+        console.log('❌ Delete note API error:', {
             noteId,
             endpoint: deleteNoteByIdEndpoint(noteId),
             status: error.response?.status,

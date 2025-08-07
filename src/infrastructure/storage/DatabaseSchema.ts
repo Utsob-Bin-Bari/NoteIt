@@ -19,8 +19,8 @@ export const DATABASE_SCHEMA = {
 
     // 2. Notes Table (Main notes with sync tracking)
     `CREATE TABLE IF NOT EXISTS notes (
-      id TEXT PRIMARY KEY,                    -- Server ID
-      local_id TEXT UNIQUE DEFAULT NULL,      -- Local temp ID for new notes
+      local_id TEXT PRIMARY KEY,             -- Local ID (always present, used for all local operations)
+      server_id TEXT UNIQUE DEFAULT NULL,    -- Server ID (only after sync, used for server operations)
       title TEXT NOT NULL,
       details TEXT NOT NULL,
       owner_id TEXT NOT NULL,
@@ -30,10 +30,10 @@ export const DATABASE_SCHEMA = {
       updated_at TEXT NOT NULL,
       
       -- Offline-first sync fields
-      sync_status TEXT DEFAULT 'synced',      -- 'synced', 'pending', 'conflict'
+      sync_status TEXT DEFAULT 'pending',     -- 'synced', 'pending', 'conflict' (default pending for new notes)
       is_deleted INTEGER DEFAULT 0,          -- Soft delete flag
       local_updated_at TEXT DEFAULT NULL,    -- Local modification timestamp
-      needs_sync INTEGER DEFAULT 0           -- 1 if needs to be synced
+      needs_sync INTEGER DEFAULT 1           -- 1 if needs to be synced (default 1 for new notes)
     )`,
 
     // 3. Users Table (Other users for sharing)
@@ -70,6 +70,7 @@ export const DATABASE_SCHEMA = {
   // Indexes for better performance
   CREATE_INDEXES: [
     `CREATE INDEX IF NOT EXISTS idx_notes_owner_id ON notes(owner_id)`,
+    `CREATE INDEX IF NOT EXISTS idx_notes_server_id ON notes(server_id)`,
     `CREATE INDEX IF NOT EXISTS idx_notes_sync_status ON notes(sync_status)`,
     `CREATE INDEX IF NOT EXISTS idx_notes_needs_sync ON notes(needs_sync)`,
     `CREATE INDEX IF NOT EXISTS idx_notes_is_deleted ON notes(is_deleted)`,
@@ -117,6 +118,29 @@ export const DatabaseHelpers = {
   isNoteBookmarkedByUser: (note: any, userId: string): boolean => {
     const bookmarkedBy = DatabaseHelpers.parseJsonArray(note.bookmarked_by);
     return bookmarkedBy.includes(userId);
+  },
+
+  // Get server_id by local_id (for sync operations)
+  getServerIdByLocalId: async (db: any, localId: string): Promise<string | null> => {
+    return new Promise((resolve, reject) => {
+      db.transaction((tx: any) => {
+        tx.executeSql(
+          'SELECT server_id FROM notes WHERE local_id = ? AND server_id IS NOT NULL',
+          [localId],
+          (_: any, result: any) => {
+            if (result.rows.length > 0) {
+              resolve(result.rows.item(0).server_id);
+            } else {
+              resolve(null);
+            }
+          },
+          (_: any, error: any) => {
+            reject(error);
+            return false;
+          }
+        );
+      });
+    });
   }
 };
 

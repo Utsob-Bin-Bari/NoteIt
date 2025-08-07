@@ -76,8 +76,8 @@ export const useHome = () => {
 
   const navigateToNote = (note?: any) => {
     if (note) {
-      dispatch(setSelectedNoteId(note.id));
-      navigation.navigate('Note', { title: note.title, noteId: note.id });
+      dispatch(setSelectedNoteId(note.local_id)); // Always use local_id
+      navigation.navigate('Note', { title: note.title, noteId: note.local_id });
     } else {
       dispatch(setSelectedNoteId(''));
       navigation.navigate('Note');
@@ -105,7 +105,7 @@ export const useHome = () => {
       // The individual components (AllNotesComponent and AllBookmarksComponent) 
       // will handle their own data refresh through their internal RefreshControl
     } catch (error) {
-      console.error('Error refreshing home data:', error);
+              console.log('Error refreshing home data:', error);
     } finally {
       setRefreshing(false);
     }

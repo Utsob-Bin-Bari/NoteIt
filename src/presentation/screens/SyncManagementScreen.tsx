@@ -313,7 +313,7 @@ const SyncManagementScreen = ({ navigation }: any) => {
     const headerOptions = getSimpleHeaderOptions(theme, toggleTheme);
     navigation.setOptions({
       ...headerOptions,
-      title: 'Sync Management',
+      title: 'Sync',
     });
   }, [navigation, theme, toggleTheme]);
 
@@ -557,6 +557,7 @@ const SyncManagementScreen = ({ navigation }: any) => {
           marginTop: 10,
         }}>
           <FlashList
+            key={theme} // Force re-render when theme changes
             data={allOperations}
             renderItem={renderOperationItem}
             keyExtractor={(item) => item.id.toString()}

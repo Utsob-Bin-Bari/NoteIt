@@ -2,12 +2,21 @@ import React from 'react';
 import { TouchableOpacity, View, Text, Platform } from 'react-native';
 import { getColors } from '../constants/Colors';
 import { ThemeType } from '../../domain/types/theme/theme';
-import { SunIcon, MoonIcon, PlusIcon, SettingsIcon } from '../components/icons';
-import SyncStatusIcon from '../components/SyncStatusIcon';
+import { SunIcon, MoonIcon, PlusIcon, SettingsIcon, WiFiOfflineIcon, WiFiOnlineIcon } from '../components/icons';
+import { useNetworkStatus } from '../hooks/useNetworkStatus';
 
 export const getCustomHeaderStyle = (theme: ThemeType) => ({
   backgroundColor: getColors(theme).background,
 });
+
+const InternetStatusIcon = ({ theme }: { theme: ThemeType }) => {
+  const colors = getColors(theme);
+  const { isConnected } = useNetworkStatus();
+  
+  return isConnected ? 
+    React.createElement(WiFiOnlineIcon, { color: colors.networkConnected, width: 20, height: 20 }) :
+    React.createElement(WiFiOfflineIcon, { color: colors.iconGrey, width: 20, height: 20 });
+};
 
 const createHeaderRight = (theme: ThemeType, toggleTheme: () => void) => {
   const colors = getColors(theme);
@@ -20,9 +29,9 @@ const createHeaderRight = (theme: ThemeType, toggleTheme: () => void) => {
         marginRight: 16
       }
     }, [
-      React.createElement(SyncStatusIcon, { 
-        key: 'sync',
-        theme 
+      React.createElement(InternetStatusIcon, {
+        key: 'internet',
+        theme
       }),
       React.createElement(TouchableOpacity, {
         key: 'theme-toggle',
@@ -95,9 +104,9 @@ const createHomeHeaderRight = (theme: ThemeType, toggleTheme: () => void, onAddN
         marginRight: 16
       }
     }, [
-      React.createElement(SyncStatusIcon, { 
-        key: 'sync',
-        theme 
+      React.createElement(InternetStatusIcon, {
+        key: 'internet',
+        theme
       }),
       React.createElement(TouchableOpacity, {
         key: 'theme-toggle',
@@ -208,7 +217,7 @@ export const getHomeHeaderOptions = (theme: ThemeType, toggleTheme: () => void, 
     headerBackTitle: '',
     gestureEnabled: false, // Disable back gesture on home screen
     headerLeft: createHomeHeaderLeft(theme, onLogout, onSettings, isLoggingOut), // Logout button and settings icon on left
-    headerRight: createHomeHeaderRight(theme, toggleTheme, onAddNote), // Sync status, plus icon, and theme toggle on right
+    headerRight: createHomeHeaderRight(theme, toggleTheme, onAddNote), // Internet status, theme toggle, and add note button on right
   };
 };
 

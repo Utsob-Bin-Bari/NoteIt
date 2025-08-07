@@ -189,7 +189,7 @@ const NoteItem: React.FC<NoteItemProps> = React.memo(({
   }, (prevProps, nextProps) => {
   // Simplified comparison - no need to check loading states
   return (
-    prevProps.item.id === nextProps.item.id &&
+    prevProps.item.local_id === nextProps.item.local_id &&
     prevProps.item.title === nextProps.item.title &&
     prevProps.item.updated_at === nextProps.item.updated_at &&
     prevProps.isDeleting === nextProps.isDeleting &&
@@ -272,7 +272,7 @@ const AllNotesComponent: React.FC<AllNotesComponentProps> = ({
     }
     
     // Check if this note is in the bookmarked notes by examining the bookmarked_by array
-    const note = notes.find(n => n.id === noteId);
+    const note = notes.find(n => n.local_id === noteId);
     if (!note || !note.bookmarked_by || !Array.isArray(note.bookmarked_by)) {
       return false;
     }
@@ -285,11 +285,11 @@ const AllNotesComponent: React.FC<AllNotesComponentProps> = ({
    * Handle bookmark action with optimistic UI updates - only allows adding bookmarks
    */
   const handleBookmark = React.useCallback(async (note: any) => {
-    const noteId = note.id;
+    const noteId = note.local_id; // Always use local_id for UI operations
     const noteTitle = note.title?.trim() || 'Untitled Note';
     
     // Check actual bookmark state (excluding optimistic updates)
-    const note_data = notes.find(n => n.id === noteId);
+    const note_data = notes.find(n => n.local_id === noteId);
     const isActuallyBookmarked = note_data?.bookmarked_by?.includes(currentUserId || '') || false;
     
     // Prevent unbookmarking from AllNotes page
@@ -350,14 +350,14 @@ const AllNotesComponent: React.FC<AllNotesComponentProps> = ({
    * Handle note press to navigate to editor
    */
   const handleNotePress = React.useCallback((note: any) => {
-    const noteId = note.id || note.local_id;
+    const noteId = note.local_id; // Always use local_id for UI operations
     const noteTitle = note.title || 'Untitled Note';
     
     if (noteId) {
       // Navigate to Note screen with noteId parameter
       navigation.navigate('Note', { noteId, title: noteTitle });
     } else {
-      console.error('❌ Cannot navigate - note has no valid ID');
+      console.error('❌ Cannot navigate - note has no valid local_id');
     }
   }, [navigation]);
 
@@ -365,11 +365,11 @@ const AllNotesComponent: React.FC<AllNotesComponentProps> = ({
    * Handle note deletion with user confirmation and ownership validation
    */
   const handleNoteDelete = React.useCallback(async (note: any) => {
-    const noteId = note.id || note.local_id;
+    const noteId = note.local_id; // Always use local_id for UI operations
     const noteTitle = note.title?.trim() || 'Untitled Note';
     
     if (!noteId) {
-      console.error('❌ Cannot delete note - no valid ID');
+      console.error('❌ Cannot delete note - no valid local_id');
       return;
     }
 
@@ -431,8 +431,8 @@ const AllNotesComponent: React.FC<AllNotesComponentProps> = ({
    * Handle info icon press to toggle shared users visibility
    */
   const handleInfoPress = useCallback((note: any) => {
-    // Use same ID resolution as other functions
-    const noteId = note.id || note.local_id;
+    // Always use local_id for UI operations
+    const noteId = note.local_id;
     setVisibleSharedUsers(prev => {
       const newSet = new Set(prev);
       if (newSet.has(noteId)) {
@@ -458,8 +458,8 @@ const AllNotesComponent: React.FC<AllNotesComponentProps> = ({
       return;
     }
 
-    // Use same ID resolution as other functions
-    const noteId = note.id || note.local_id;
+    // Always use local_id for UI operations
+    const noteId = note.local_id;
     setVisibleShareInput(prev => {
       const newSet = new Set(prev);
       if (newSet.has(noteId)) {
@@ -475,7 +475,7 @@ const AllNotesComponent: React.FC<AllNotesComponentProps> = ({
    * Handle note sharing
    */
   const handleShare = useCallback(async (note: any, email: string): Promise<{ success: boolean; error?: string }> => {
-    const noteId = note.id || note.local_id;
+    const noteId = note.local_id; // Always use local_id for UI operations
     
     try {
       // Import shareNote service
@@ -504,9 +504,9 @@ const AllNotesComponent: React.FC<AllNotesComponentProps> = ({
 
   // Memoize renderItem to prevent unnecessary re-creations
   const renderItem = useCallback(({ item }: { item: any }) => {
-    const isBookmarkedState = isBookmarkedSync(item.id);
-    // Use consistent ID resolution
-    const itemId = item.id || item.local_id;
+    const isBookmarkedState = isBookmarkedSync(item.local_id); // Always use local_id
+    // Always use local_id for UI operations
+    const itemId = item.local_id;
     const showSharedUsers = visibleSharedUsers.has(itemId);
     const showShareInput = visibleShareInput.has(itemId);
     
@@ -519,7 +519,7 @@ const AllNotesComponent: React.FC<AllNotesComponentProps> = ({
         onInfoPress={() => handleInfoPress(item)}
         onSharePress={() => handleSharePress(item)}
         onShare={(email: string) => handleShare(item, email)}
-        isDeleting={deletingNotes.has(item.id)}
+        isDeleting={deletingNotes.has(item.local_id)} // Always use local_id
         isBookmarked={isBookmarkedState}
         showSharedUsers={showSharedUsers}
         showShareInput={showShareInput}
@@ -611,7 +611,7 @@ const AllNotesComponent: React.FC<AllNotesComponentProps> = ({
         data={filteredNotes}
         renderItem={renderItem}
         estimatedItemSize={120} // Increased for better estimation with date
-        keyExtractor={(item) => item.id}
+        keyExtractor={(item) => item.local_id}
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
         refreshControl={

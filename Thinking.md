@@ -206,3 +206,11 @@
 * apk file is added.
 * screen recording is added.
 * Ipa file is creating problem due to node dependency so couldn't extract at that moment.
+
+# Commit 18: Alternative Link is added for demo video and apk download
+* Demo Video 3 min.
+* APk 47 MB.
+
+# Commit 19: Bug Fixes. 
+* Make sure everything will use local_id on the devices.
+* Soft delete on delete after querry finishing hard delete from sqlite local storage.

@@ -1,4 +1,5 @@
 import { syncQueueService } from './syncQueueService';
+import { notesSQLiteService } from './notesSQLiteService';
 import { OPERATION_TYPES } from '../../../infrastructure/storage/DatabaseSchema';
 
 /**
@@ -22,9 +23,11 @@ export const clearFailedDeleteOperations = async (): Promise<{
     
     const clearedOperations: string[] = [];
     
-    // Mark them as completed (removes from queue)
+    // Mark them as completed (removes from queue) and permanently delete soft-deleted notes
     for (const op of failedDeletes) {
       await syncQueueService.markOperationCompleted(op.id);
+      // Also permanently delete the soft-deleted note since sync failed
+      await notesSQLiteService.permanentlyDeleteNote(op.entity_id);
       clearedOperations.push(op.entity_id);
     }
     
@@ -35,7 +38,7 @@ export const clearFailedDeleteOperations = async (): Promise<{
     };
     
   } catch (error) {
-    console.error('❌ Error cleaning up failed delete operations:', error);
+    console.log('❌ Error cleaning up failed delete operations:', error);
     return {
       cleared: 0,
       operations: []
